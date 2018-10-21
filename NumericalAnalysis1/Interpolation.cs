@@ -14,8 +14,10 @@ namespace NumericalAnalysis1
     enum InterpolateMethod{ Nearest, Bilinear, Bicubic };
     class Interpolation
     {
+        // Source image and Destination Image must be in the same size.
+        // Singleton.
         private static Interpolation instance = null;
-        // ARGB make up a 32bit data
+        // ARGB make up a 32bit data.
         int[,] matSrcData = null;
         int[,] matDstData = null;
         private Size szImg;
@@ -55,7 +57,62 @@ namespace NumericalAnalysis1
         }
         public void Step(Point2d ptSrc, Point2i ptDst, InterpolateMethod method)
         {
-            
+            int xDst = ptDst.X, yDst = ptDst.Y;
+            switch(method)
+            {
+                case InterpolateMethod.Bicubic:
+                    int[,] roiBicubic = GetNeighbourhood16(ptSrc);
+                    matDstData[xDst, yDst] = Bicubic(roiBicubic, ptSrc);
+                    break;
+                case InterpolateMethod.Bilinear:
+                    int[,] roiBilinear = GetNeighbourhood4(ptSrc);
+                    matDstData[xDst, yDst] = Bilinear(roiBilinear, ptSrc);
+                    break;
+                case InterpolateMethod.Nearest:
+                    matDstData[xDst, yDst] = GetNeighbourhood1(ptSrc);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid method.");
+            }
+        }
+        private int Bilinear(int[,] ROI, Point2d ptSrc)
+        {
+            // u = frac(x) v = frac(y)
+            double u = ptSrc.X - (int)ptSrc.X, v = ptSrc.Y - (int)ptSrc.Y;
+            double a = 0.0, r = 0.0, g = 0.0, b = 0.0;
+            // Perform simple
+            for(int i = 0; i < 2; ++i)
+            {
+                for(int j = 0; j < 2; ++j)
+                {
+                    int data = ROI[i, j];
+                    double coefficient = LinearBase(i, u) * LinearBase(j, v);
+                    a += coefficient * ((data >> 24) & 0x000000ff);
+                    r += coefficient * ((data >> 16) & 0x000000ff);
+                    g += coefficient * ((data >> 8) & 0x000000ff);
+                    b += coefficient * ((data >> 0) & 0x000000ff);
+                }
+            }
+            // Restrict to [0, 255]
+            int a_ = Restrict(a);
+            int r_ = Restrict(r);
+            int g_ = Restrict(g);
+            int b_ = Restrict(b);
+            // Compose
+            return (a_ << 24) | (r_ << 16) | (g_ << 8) | (b_ << 0);
+        }
+        private double LinearBase(int k, double x)
+        {
+            // Linear base function
+            switch(k)
+            {
+                case 0:
+                    return 1.0 - x;
+                case 1:
+                    return x;
+                default:
+                    throw new ArgumentException("K must be 0 or 1.");
+            }
         }
         private int Bicubic(int[,] ROI, Point2d ptSrc)
         {
@@ -67,20 +124,21 @@ namespace NumericalAnalysis1
             {
                 for(int j = 0; j < 4; ++j)
                 {
+                    int data = ROI[i, j];
                     double coefficient = CubicBase(u + 1 - i) * CubicBase(v + 1 - j);
-                    a += coefficient * ((ROI[i, j] >> 24) & 0x000000ff);
-                    r += coefficient * ((ROI[i, j] >> 16) & 0x000000ff);
-                    g += coefficient * ((ROI[i, j] >> 8) & 0x000000ff);
-                    b += coefficient * ((ROI[i, j] >> 0) & 0x000000ff);
+                    a += coefficient * ((data >> 24) & 0x000000ff);
+                    r += coefficient * ((data >> 16) & 0x000000ff);
+                    g += coefficient * ((data >> 8) & 0x000000ff);
+                    b += coefficient * ((data >> 0) & 0x000000ff);
                 }
             }
             // Restrict to [0, 255]
-            a = Restrict(a);
-            r = Restrict(r);
-            g = Restrict(g);
-            b = Restrict(b);
+            int a_ = Restrict(a);
+            int r_ = Restrict(r);
+            int g_ = Restrict(g);
+            int b_ = Restrict(b);
             // Compose
-            return ((int)a << 24) | ((int)r << 16) | ((int)g << 8) | ((int)b << 0);
+            return (a_ << 24) | (r_ << 16) | (g_ << 8) | (b_ << 0);
         }
         private double CubicBase(double x)
         {
@@ -147,6 +205,7 @@ namespace NumericalAnalysis1
         }
         private int Restrict(double x)
         {
+            // Restrict to one byte
             x = x < 255.0 ? x : 255.0;
             x = x > 0.0 ? x : 0.0;
             return (int)x;
