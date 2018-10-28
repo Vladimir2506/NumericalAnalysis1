@@ -12,7 +12,7 @@ using Size = System.Drawing.Size;
 
 namespace NumericalAnalysis1
 {
-    public enum InterpolateMethod{ Nearest, Bilinear, Bicubic };
+    public enum InterpolateMethod { Nearest, Bilinear, Bicubic };
     public class Interpolation
     {
         // Source image and Destination Image must be in the same size.
@@ -47,8 +47,7 @@ namespace NumericalAnalysis1
                             *(pMat + i + j * srcData.Width) = *(pImg + i + j * srcData.Width);
                         }
                     }
-                }
-                    
+                }                   
             }
             ((Bitmap)img).UnlockBits(srcData);
         }
