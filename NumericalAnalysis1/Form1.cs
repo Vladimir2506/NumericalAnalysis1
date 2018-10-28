@@ -14,6 +14,7 @@ using OpenCvSharp.Extensions;
 using Point2i = OpenCvSharp.Point;
 using Cuda = OpenCvSharp.Cuda;
 using System.Net;
+using System.Drawing.Imaging;
 
 namespace NumericalAnalysis1
 {
@@ -73,17 +74,26 @@ namespace NumericalAnalysis1
 
         private void OnLoad(object sender, EventArgs e)
         {
-            ptsLandmarkSrc = LoadFacialLandmarks(nImageOri);
-            ptsLandmarkGuide = LoadFacialLandmarks(nImageGuide);
-            int n = 0;
-            foreach(int k in idxs)
+            Bitmap bmp = new Bitmap("./data/LENA.bmp");
+            System.Drawing.Size size = bmp.Size;
+            pbSrc.Image = bmp;
+            Interpolation interpolater = Interpolation.GetInstance();
+            interpolater.SetSourceImg(bmp);
+            Bitmap bmp2 = new Bitmap(size.Width * 2, size.Height * 2);
+            BitmapData data2 = bmp2.LockBits(new Rectangle(0, 0, bmp2.Width, bmp2.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            unsafe
             {
-                ptsConvertGuide[n] = ptsLandmarkGuide[k];
-                ptsConvertSrc[n] = ptsLandmarkSrc[k];
-                ++n;
+                int* pData = (int*)data2.Scan0;
+                for(int j = 0; j < bmp2.Height; ++j)
+                {
+                    for(int i = 0; i < bmp2.Width; ++i)
+                    {
+                        *(pData + i + j * bmp2.Width) = interpolater.Step(new Point2d(i / 2.0, j / 2.0), InterpolateMethod.Nearest);
+                    }
+                }
             }
-            
-
+            bmp2.UnlockBits(data2);
+            bmp2.Save("./data/NEAREST.bmp");
         }
 
         private void OnFormClosing(object sender, FormClosingEventArgs e)
