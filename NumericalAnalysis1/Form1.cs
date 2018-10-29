@@ -74,7 +74,7 @@ namespace NumericalAnalysis1
 
         private void OnLoad(object sender, EventArgs e)
         {
-            Bitmap bmp = new Bitmap("./data/LENA.bmp");
+            Bitmap bmp = new Bitmap("./data/test.png");
             System.Drawing.Size size = bmp.Size;
             pbSrc.Image = bmp;
             Interpolation interpolater = Interpolation.GetInstance();
@@ -88,12 +88,13 @@ namespace NumericalAnalysis1
                 {
                     for(int i = 0; i < bmp2.Width; ++i)
                     {
-                        *(pData + i + j * bmp2.Width) = interpolater.Step(new Point2d(i / 2.0, j / 2.0), InterpolateMethod.Nearest);
+                        *(pData + i + j * bmp2.Width) = interpolater.Step(new Point2d(i / 2.0, j / 2.0), InterpolateMethod.Bicubic);
                     }
                 }
             }
             bmp2.UnlockBits(data2);
-            bmp2.Save("./data/NEAREST.bmp");
+            pbDst.Image = bmp2;
+            bmp2.Save("./data/testBicubic.png");
         }
 
         private void OnFormClosing(object sender, FormClosingEventArgs e)
@@ -116,7 +117,7 @@ namespace NumericalAnalysis1
                 long nLen = fsRead.Length;
                 byte[] buffer = new byte[nLen];
                 fsRead.Read(buffer, 0, buffer.Length);
-                string strEntire = System.Text.Encoding.UTF8.GetString(buffer);
+                string strEntire = Encoding.UTF8.GetString(buffer);
                 string[] strPoints = strEntire.Split(chSeps);
                 fsRead.Close();
                 for (int k = 0; k < nLandmarks; ++k)

@@ -16,7 +16,11 @@ namespace NumericalAnalysis1
     {
         // Size of image
         private Size szImg;
-        private Size szGrid;
+        // Size of grid
+        private int nPatchX;
+        private int nPatchY;
+        private int szGrid;
+        private int[] deltasGrids;
         // Singleton.
         private static DeformBspline instance = null;
         private DeformBspline() { }
@@ -30,15 +34,31 @@ namespace NumericalAnalysis1
             return instance;
         }
 
-        public void SetAttribute(Image img, Size gridSize)
+        public void SetAttribute(Image img, int gridSize)
         {
             // Set internal data matrix to image.
             szImg = new Size(img.Width, img.Height);
             szGrid = gridSize;
+            nPatchX = (int)Math.Ceiling((double)szImg.Width / gridSize);
+            nPatchY = (int)Math.Ceiling((double)szImg.Height / gridSize);
+            deltasGrids = new int[nPatchX * nPatchY];
         }
 
-        private void Step(Point2i ptSrc)
+        private void Step(Point2i ptSrc, Point2d ptDst, Point2i ptBegin, Point2i ptEnd)
         {
+            int idxControlX = (int)Math.Round((double)ptBegin.X / szGrid);
+            int idxControlY = (int)Math.Round((double)ptBegin.Y / szGrid);
+            if (idxControlX < 0) idxControlX = 0;
+            if (idxControlY < 0) idxControlX = 0;
+            if (idxControlX >= nPatchX - 1) idxControlX = nPatchX - 2;
+            if (idxControlY >= nPatchY - 1) idxControlY = nPatchY - 2;
+            int deltaX = ptEnd.X - idxControlX * szGrid;
+            int deltaY = ptEnd.Y - idxControlY * szGrid;
+            if (deltaX < -szGrid) deltaX = 1 - szGrid;
+            if (deltaY < -szGrid) deltaY = 1 - szGrid;
+            if (deltaX > szGrid) deltaX = szGrid - 1;
+            if (deltaY > szGrid) deltaY = szGrid - 1;
+            
 
         }
 
@@ -74,7 +94,5 @@ namespace NumericalAnalysis1
                     return 0.0;
             }
         }
-       
     }
-
 }
