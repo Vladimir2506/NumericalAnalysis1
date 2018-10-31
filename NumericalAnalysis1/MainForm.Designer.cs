@@ -39,8 +39,8 @@
             // 
             this.pbSrc.Location = new System.Drawing.Point(33, 34);
             this.pbSrc.Name = "pbSrc";
-            this.pbSrc.Size = new System.Drawing.Size(284, 222);
-            this.pbSrc.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.pbSrc.Size = new System.Drawing.Size(404, 276);
+            this.pbSrc.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pbSrc.TabIndex = 0;
             this.pbSrc.TabStop = false;
             // 
@@ -48,8 +48,8 @@
             // 
             this.pbDst.Location = new System.Drawing.Point(484, 34);
             this.pbDst.Name = "pbDst";
-            this.pbDst.Size = new System.Drawing.Size(284, 222);
-            this.pbDst.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.pbDst.Size = new System.Drawing.Size(376, 276);
+            this.pbDst.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pbDst.TabIndex = 1;
             this.pbDst.TabStop = false;
             // 
@@ -69,7 +69,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.pbSrc)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbDst)).EndInit();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 

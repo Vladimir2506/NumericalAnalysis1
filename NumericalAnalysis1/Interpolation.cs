@@ -52,7 +52,7 @@ namespace NumericalAnalysis1
         }
         public int Step(Point2d ptSrc, InterpolateMethod method)
         {
-            // One step to calculate the interpolated value.
+            // The atomic operation to calculate the interpolated value.
             switch(method)
             {
                 case InterpolateMethod.Bicubic:

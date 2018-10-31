@@ -74,7 +74,7 @@ namespace NumericalAnalysis1
 
         private void OnLoad(object sender, EventArgs e)
         {
-            Bitmap bmp = new Bitmap("./data/test.png");
+            /*Bitmap bmp = new Bitmap("./data/test.png");
             System.Drawing.Size size = bmp.Size;
             pbSrc.Image = bmp;
             Interpolation interpolater = Interpolation.GetInstance();
@@ -94,7 +94,48 @@ namespace NumericalAnalysis1
             }
             bmp2.UnlockBits(data2);
             pbDst.Image = bmp2;
-            bmp2.Save("./data/testBicubic.png");
+            bmp2.Save("./data/testBicubic.png");*/
+            Bitmap bmpSrc = new Bitmap("./data/8.jpg");
+            Bitmap bmpDst = new Bitmap(bmpSrc.Width, bmpSrc.Height);
+            Point2i[] mrk1 = LoadFacialLandmarks(8);
+            Point2i[] mrk2 = LoadFacialLandmarks(9);
+            DeformTPS tps = DeformTPS.GetInstance();
+            DeformBspline bsp = DeformBspline.GetInstance();
+            bsp.SetAttribute(bmpSrc, 20);
+            tps.SetAttribute(68);
+            tps.Estimate(mrk2, mrk1);
+            Interpolation intp = Interpolation.GetInstance();
+            intp.SetSourceImg(bmpSrc);
+            BitmapData data = bmpDst.LockBits(new Rectangle(0, 0, bmpSrc.Width, bmpSrc.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            unsafe
+            {
+                int* p = (int*)data.Scan0;
+                for (int j = 0; j < bmpDst.Height; ++j)
+                {
+                    for (int i = 0; i < bmpDst.Width; ++i)
+                    {
+                        * (p + i + j * bmpDst.Width) = intp.Step(tps.Step(new Point2i(i, j)), InterpolateMethod.Nearest);
+                    }
+                }
+            }
+            /*unsafe
+            {
+                int* p = (int*)data.Scan0;
+                for (int k = 0; k < 68; ++k)
+                {
+                    Point2i[] boundaries = bsp.Displace(mrk1[k], mrk2[k]);
+                    for (int j = boundaries[0].Y; j < boundaries[1].Y; ++j)
+                    {
+                        for (int i = boundaries[0].X; i < boundaries[1].X; ++i)
+                        {
+                            *(p + i + j * bmpDst.Width) = intp.Step(bsp.Step(new Point2i(i, j)), InterpolateMethod.Bicubic);
+                        }
+                    }
+                }
+            }*/
+            bmpDst.UnlockBits(data);
+            pbSrc.Image = bmpSrc;
+            pbDst.Image = bmpDst;
         }
 
         private void OnFormClosing(object sender, FormClosingEventArgs e)
@@ -107,12 +148,12 @@ namespace NumericalAnalysis1
             
         }
 
-        private Point2f[] LoadFacialLandmarks(int nID)
+        private Point2i[] LoadFacialLandmarks(int nID)
         {
             string strLandmarkFileName = strDataPath + nID.ToString() + ".txt";
             if (File.Exists(strLandmarkFileName))
             {
-                Point2f[] ptsLandmarks = new Point2f[nLandmarks];
+                Point2i[] ptsLandmarks = new Point2i[nLandmarks];
                 FileStream fsRead = new FileStream(strLandmarkFileName, FileMode.Open);
                 long nLen = fsRead.Length;
                 byte[] buffer = new byte[nLen];
@@ -122,14 +163,14 @@ namespace NumericalAnalysis1
                 fsRead.Close();
                 for (int k = 0; k < nLandmarks; ++k)
                 {
-                    ptsLandmarks[k].X = Convert.ToSingle(strPoints[2 * k]);
-                    ptsLandmarks[k].Y = Convert.ToSingle(strPoints[2 * k + 1]);
+                    ptsLandmarks[k].X = (int)Convert.ToSingle(strPoints[2 * k]);
+                    ptsLandmarks[k].Y = (int)Convert.ToSingle(strPoints[2 * k + 1]);
                 }
                 return ptsLandmarks;
             }
             else
             {
-                return new Point2f[]{ };
+                return new Point2i[]{ };
             }
         }
     }
