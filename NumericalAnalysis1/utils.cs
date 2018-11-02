@@ -77,5 +77,38 @@ namespace NumericalAnalysis1
                 mat[r2, k] = tmp;
             }
         }
+        public static double[,] Transpose(double[,] mat)
+        {
+            int rows = mat.GetLength(0), cols = mat.GetLength(1);
+            double[,] result = new double[cols, rows];
+            for(int i = 0; i < cols; ++i)
+            {
+                for(int j = 0; j < rows; ++j)
+                {
+                    result[i, j] = mat[j, i];
+                }
+            }
+            return result;
+        }
+        public static double[,] MatMul(double[,] A, double[,] B)
+        {
+            if(A.GetLength(1) != B.GetLength(0))
+            {
+                throw new ArgumentException("Invalid axes to perform matmul.");
+            }
+            int rows = A.GetLength(0), cols = B.GetLength(1), anc = A.GetLength(1);
+            double[,] result = new double[rows, cols];
+            for (int i = 0; i < rows; ++i)
+            {
+                for(int j = 0; j < cols; ++j)
+                {
+                    for(int k = 0; k < anc; ++k)
+                    {
+                        result[i, j] += A[i, k] * B[k, j];
+                    }
+                }
+            }
+            return result;
+        }
     }
 }

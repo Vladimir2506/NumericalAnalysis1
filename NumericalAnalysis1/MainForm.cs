@@ -96,17 +96,24 @@ namespace NumericalAnalysis1
             pbDst.Image = bmp2;
             bmp2.Save("./data/testBicubic.png");*/
             Bitmap bmpSrc = new Bitmap("./data/8.jpg");
-            Bitmap bmpDst = new Bitmap(bmpSrc.Width, bmpSrc.Height);
+            Bitmap bmpDst = (Bitmap)bmpSrc.Clone();
             Point2i[] mrk1 = LoadFacialLandmarks(8);
             Point2i[] mrk2 = LoadFacialLandmarks(9);
-            DeformTPS tps = DeformTPS.GetInstance();
-            DeformBspline bsp = DeformBspline.GetInstance();
-            bsp.SetAttribute(bmpSrc, 20);
-            tps.SetAttribute(68);
-            tps.Estimate(mrk2, mrk1);
+            Point2i[] mrk22 = new Point2i[17], mrk11 = new Point2i[17];
+            for (int i = 0; i < 17; ++i)
+            {
+                mrk11[i] = mrk1[i];
+                mrk22[i] = mrk2[i];
+            }
             Interpolation intp = Interpolation.GetInstance();
             intp.SetSourceImg(bmpSrc);
             BitmapData data = bmpDst.LockBits(new Rectangle(0, 0, bmpSrc.Width, bmpSrc.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            Alignment algn = Alignment.GetInstance();
+            algn.EstimateLeastSquare(mrk11, mrk22);
+            //mrk2 = algn.ApplyTransform(mrk1);
+            /*DeformTPS tps = DeformTPS.GetInstance();
+            tps.SetAttribute(68);
+            tps.Estimate(mrk2, mrk1);
             unsafe
             {
                 int* p = (int*)data.Scan0;
@@ -117,8 +124,11 @@ namespace NumericalAnalysis1
                         * (p + i + j * bmpDst.Width) = intp.Step(tps.Step(new Point2i(i, j)), InterpolateMethod.Nearest);
                     }
                 }
-            }
-            /*unsafe
+            }*/
+            
+            DeformBspline bsp = DeformBspline.GetInstance();
+            bsp.SetAttribute(bmpSrc, 25);
+            unsafe
             {
                 int* p = (int*)data.Scan0;
                 for (int k = 0; k < 68; ++k)
@@ -132,7 +142,7 @@ namespace NumericalAnalysis1
                         }
                     }
                 }
-            }*/
+            }
             bmpDst.UnlockBits(data);
             pbSrc.Image = bmpSrc;
             pbDst.Image = bmpDst;

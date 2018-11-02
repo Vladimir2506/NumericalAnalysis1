@@ -55,15 +55,15 @@ namespace NumericalAnalysis1
             // nControl - 1 may be out of the map.
             if (idxControlX >= nControlX - 1) idxControlX = nControlX - 2;
             if (idxControlY >= nControlY - 1) idxControlY = nControlY - 2;
-            int deltaX = ptEnd.X - idxControlX * szGrid;
-            int deltaY = ptEnd.Y - idxControlY * szGrid;
+            short deltaX = (short)(ptEnd.X - idxControlX * szGrid);
+            short deltaY = (short)(ptEnd.Y - idxControlY * szGrid);
             // Regularize the displacement into 1 grid.
-            if (deltaX < -szGrid) deltaX = 1 - szGrid;
-            if (deltaY < -szGrid) deltaY = 1 - szGrid;
-            if (deltaX > szGrid) deltaX = szGrid - 1;
-            if (deltaY > szGrid) deltaY = szGrid - 1;
+            if (deltaX < -szGrid) deltaX = (short)(1 - szGrid);
+            if (deltaY < -szGrid) deltaY = (short)(1 - szGrid);
+            if (deltaX > szGrid) deltaX = (short)(szGrid - 1);
+            if (deltaY > szGrid) deltaY = (short)(szGrid - 1);
             // Store delta.
-            deltasGrids[idxControlX + idxControlY * nControlX] = ((deltaY << 16) & 0xffff) | ((deltaX << 0) & 0xffff);
+            deltasGrids[idxControlX + idxControlY * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
             // Determine region of the map.
             Point2i ptLeftUp = new Point2i(Math.Max(idxControlX - 2, 0) * szGrid, Math.Max(idxControlY - 2, 0) * szGrid);
             Point2i ptRightDown = new Point2i(Math.Min(idxControlX + 2, nControlX) * szGrid, Math.Min(idxControlY + 2, nControlY) * szGrid);
@@ -102,8 +102,8 @@ namespace NumericalAnalysis1
                             // Get control points displacement and sum together by coefficient
                             int* pGrid = pGridBase + controlIdxs[i].X + controlIdxs[j].Y * nControlX;
                             double coefficient = BsplineBasis3(i, u) * BsplineBasis3(j, v);
-                            ptDst.X += coefficient * ((*pGrid >> 0) & 0xffff);
-                            ptDst.Y += coefficient * ((*pGrid >> 16) & 0xffff);
+                            ptDst.X += coefficient * (short)((*pGrid >> 0) & 0xffff);
+                            ptDst.Y += coefficient * (short)((*pGrid >> 16) & 0xffff);
                         }
                     }
                 }
@@ -224,43 +224,7 @@ namespace NumericalAnalysis1
                 augmented[k, nControlPoints + 4] = dsts[k].Y;
             }
             // Solve.
-            // Step 1: Upper triangle matrix.
-            for (int i = 0; i < maxRows; ++i)
-            {
-                for (int k = i + 1; Math.Abs(augmented[i, i]) < 1e-12; ++k)
-                {
-                    SwapRows(augmented, i, k);
-                }
-                for (int j = i + 1; j < maxRows; ++j)
-                {
-                    double factor = augmented[j, i] / augmented[i, i];
-                    for (int k = i; k < maxCols; ++k)
-                    {
-                        augmented[j, k] -= factor * augmented[i, k];
-                    }                        
-                }
-            }
-            // Step 2: Diagnol line normalization.
-            for (int i = 0; i < maxRows; ++i)
-            {
-                for (int j = i + 1; j < maxCols; ++j)
-                {
-                    augmented[i, j] /= augmented[i, i];
-                }
-                augmented[i, i] = 1.0;
-            }
-            // Step 3: Identity matrix.
-            for (int i = maxRows - 2; i >= 0; --i)
-            {
-                for (int j = i; j >= 0; --j)
-                {
-                    double factor = augmented[j, i + 1];
-                    for (int k = i + 1; k < maxCols; ++k)
-                    {
-                        augmented[j, k] -= factor * augmented[i + 1, k];
-                    }                      
-                }
-            }
+            Utils.SolveLinearEqn(augmented);
             // Get result.
             for (int j = 0; j < maxRows; ++j)
             {
@@ -280,18 +244,5 @@ namespace NumericalAnalysis1
             else result = r2 * Math.Log(r2);
             return result;
         }
-
-        private void SwapRows(double[,] mat, int r1, int r2)
-        {
-            if (r1 == r2) return;
-            int cols = mat.GetLength(1);
-            for (int k = 0; k < cols; ++k)
-            {
-                double tmp = mat[r1, k];
-                mat[r1, k] = mat[r2, k];
-                mat[r2, k] = tmp;
-            }
-        }
-       
     }
 }
