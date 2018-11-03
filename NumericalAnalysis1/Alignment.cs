@@ -69,12 +69,10 @@ namespace NumericalAnalysis1
             // 4. Get result
             for(int i = 0; i < 3; ++i)
             {
-                tsfmMatrix[i, 0] = 0;// augmented[i, 3];
-                tsfmMatrix[i, 1] = 0;// augmented[i, 4];
+                tsfmMatrix[i, 0] = augmented[i, 3];
+                tsfmMatrix[i, 1] = augmented[i, 4];
                 tsfmMatrix[i, 2] = augmented[i, 5];
             }
-            tsfmMatrix[0, 0] = 1;
-            tsfmMatrix[1, 1] = 1;
         }
 
         public Point2i[] ApplyTransform(Point2i[] points)

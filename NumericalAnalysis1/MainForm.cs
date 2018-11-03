@@ -98,9 +98,9 @@ namespace NumericalAnalysis1
             Bitmap bmpSrc = new Bitmap("./data/8.jpg");
             Bitmap bmpDst = (Bitmap)bmpSrc.Clone();
             Point2i[] mrk1 = LoadFacialLandmarks(8);
-            Point2i[] mrk2 = LoadFacialLandmarks(9);
-            Point2i[] mrk22 = new Point2i[17], mrk11 = new Point2i[17];
-            for (int i = 0; i < 17; ++i)
+            Point2i[] mrk2 = LoadFacialLandmarks(1);
+            Point2i[] mrk22 = new Point2i[27], mrk11 = new Point2i[27];
+            for (int i = 0; i < 27; ++i)
             {
                 mrk11[i] = mrk1[i];
                 mrk22[i] = mrk2[i];
@@ -109,8 +109,8 @@ namespace NumericalAnalysis1
             intp.SetSourceImg(bmpSrc);
             BitmapData data = bmpDst.LockBits(new Rectangle(0, 0, bmpSrc.Width, bmpSrc.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             Alignment algn = Alignment.GetInstance();
-            algn.EstimateLeastSquare(mrk11, mrk22);
-            //mrk2 = algn.ApplyTransform(mrk1);
+            algn.EstimateLeastSquare(mrk22, mrk11);
+            mrk2 = algn.ApplyTransform(mrk2);
             /*DeformTPS tps = DeformTPS.GetInstance();
             tps.SetAttribute(68);
             tps.Estimate(mrk2, mrk1);
@@ -127,7 +127,7 @@ namespace NumericalAnalysis1
             }*/
             
             DeformBspline bsp = DeformBspline.GetInstance();
-            bsp.SetAttribute(bmpSrc, 25);
+            bsp.SetAttribute(bmpSrc, 20);
             unsafe
             {
                 int* p = (int*)data.Scan0;

@@ -63,7 +63,16 @@ namespace NumericalAnalysis1
             if (deltaX > szGrid) deltaX = (short)(szGrid - 1);
             if (deltaY > szGrid) deltaY = (short)(szGrid - 1);
             // Store delta.
-            deltasGrids[idxControlX + idxControlY * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
+            /*for (int j = -1; j < 2; ++j)
+            {
+                for(int i = -1; i < 2; ++i)
+                {
+                    int ii = idxControlX + i, jj = idxControlY + j;
+                    if (ii < 0 || ii >= nControlX - 1 || jj < 0 || jj >= nControlY - 1) continue;
+                    deltasGrids[ii+ jj * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
+                }
+            }*/
+            deltasGrids[(idxControlX) + (idxControlY) * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
             // Determine region of the map.
             Point2i ptLeftUp = new Point2i(Math.Max(idxControlX - 2, 0) * szGrid, Math.Max(idxControlY - 2, 0) * szGrid);
             Point2i ptRightDown = new Point2i(Math.Min(idxControlX + 2, nControlX) * szGrid, Math.Min(idxControlY + 2, nControlY) * szGrid);
