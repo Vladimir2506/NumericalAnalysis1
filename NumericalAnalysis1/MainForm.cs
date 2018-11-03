@@ -20,132 +20,88 @@ namespace NumericalAnalysis1
 {
     public partial class MainForm : Form
     {
-        private string strDataPath = "./data/";
-        private int nImageOri = 1;
-        private int nImageGuide = 2;
+        private int idxImgSrc = 0;
+        private int idxImgGuide = 0;
+        private int totalImgs = 0;
+        Point2i[] mrkSrc = null;
+        Point2i[] mrkGuide = null;
+        private bool srcMrkShown = false;
+        private bool guideMrkShown = false;
+        private bool srcImgChanged = false;
+        private bool guideImgChanged = false;
+        DeformBspline bsp = null;
+        DeformTPS tps = null;
+        Interpolation intp = null;
+        Alignment algn = null;
+        private int landmarks = 68;
+        private char[] separators = {' ', '\r', '\n' };
+        Bitmap imgSrc = null;
+        Bitmap imgGuide = null;
+        Bitmap imgDst = null;
+        private InterpolateMethod method;
 
-        private Point2f[] ptsLandmarkSrc;
-        private Point2f[] ptsLandmarkGuide;
-        private Point2f[] ptsLandmarkDst;
-        private Point2f[] ptsLandmarkMean;
-        private Point2f[] ptsConvertSrc;
-        private Point2f[] ptsConvertGuide;
-
-        private int nLandmarks = 68;
-        private int[] idxs = { 38 - 1, 43 - 1, 48 - 1, 54 - 1 };
-        private char[] chSeps = {' ', '\r', '\n' };
-        private double[] dMeanLandmarkXs = 
-        {
-            0.000213256, 0.0752622, 0.18113, 0.29077, 0.393397, 0.586856, 0.689483, 0.799124,
-            0.904991, 0.98004, 0.490127, 0.490127, 0.490127, 0.490127, 0.36688, 0.426036,
-            0.490127, 0.554217, 0.613373, 0.121737, 0.187122, 0.265825, 0.334606, 0.260918,
-            0.182743, 0.645647, 0.714428, 0.793132, 0.858516, 0.79751, 0.719335, 0.254149,
-            0.340985, 0.428858, 0.490127, 0.551395, 0.639268, 0.726104, 0.642159, 0.556721,
-            0.490127, 0.423532, 0.338094, 0.290379, 0.428096, 0.490127, 0.552157, 0.689874,
-            0.553364, 0.490127, 0.42689
-        };
-        private double[] dMeanLandmarkYs =
-        {
-            0.106454, 0.038915, 0.0187482, 0.0344891, 0.0773906, 0.0773906, 0.0344891,
-            0.0187482, 0.038915, 0.106454, 0.203352, 0.307009, 0.409805, 0.515625, 0.587326,
-            0.609345, 0.628106, 0.609345, 0.587326, 0.216423, 0.178758, 0.179852, 0.231733,
-            0.245099, 0.244077, 0.231733, 0.179852, 0.178758, 0.216423, 0.244077, 0.245099,
-            0.780233, 0.745405, 0.727388, 0.742578, 0.727388, 0.745405, 0.780233, 0.864805,
-            0.902192, 0.909281, 0.902192, 0.864805, 0.784792, 0.778746, 0.785343, 0.778746,
-            0.784792, 0.824182, 0.831803, 0.824182
-        };
         public MainForm()
         {
             InitializeComponent();
-            ptsLandmarkSrc = new Point2f[nLandmarks];
-            ptsLandmarkDst = new Point2f[nLandmarks];
-            ptsLandmarkGuide = new Point2f[nLandmarks];
-            ptsLandmarkMean = new Point2f[68 - 17];
-            ptsConvertSrc = new Point2f[68 - 17];
-            ptsConvertGuide = new Point2f[68 - 17];
-           
-            for(int i = 0;i < 68 - 17; ++i)
+            while (File.Exists(string.Format("./data/{0}.jpg", totalImgs + 1))) totalImgs++;
+            intp = Interpolation.GetInstance();
+            bsp = DeformBspline.GetInstance();
+            tps = DeformTPS.GetInstance();
+            algn = Alignment.GetInstance();
+        }
+
+        private void InitData()
+        {
+            pbDst.Image = new Bitmap("./data/test.jpg");
+            idxImgSrc = 1;
+            idxImgGuide = 1;
+            srcImgChanged = true;
+            guideImgChanged = true;
+            srcMrkShown = false;
+            guideMrkShown = false;
+            rbNearest.Checked = true;
+            method = InterpolateMethod.Nearest;
+        }
+
+        private void UpdateData()
+        {
+            if (srcMrkShown) btnSrcMrk.Text = "隐藏关键点";
+            else btnSrcMrk.Text = "显示关键点";
+            if (guideMrkShown) btnGuideMrk.Text = "隐藏关键点";
+            else btnGuideMrk.Text = "显示关键点";
+            if (srcImgChanged)
             {
-                ptsLandmarkMean[i].X = (float)dMeanLandmarkXs[i];
-                ptsLandmarkMean[i].Y = (float)dMeanLandmarkYs[i];
+                string pathImgSrc = string.Format("./data/{0}.jpg", idxImgSrc);
+                string pathMrkSrc = string.Format("./data/{0}.txt", idxImgSrc);
+                imgSrc = new Bitmap(pathImgSrc);
+                mrkSrc = LoadFacialLandmarks(pathMrkSrc);
+                pbSrc.Image = imgSrc;
+                imgDst = (Bitmap)imgSrc.Clone();
+                srcImgChanged = false;
             }
-            
+            if (guideImgChanged)
+            {
+                string pathImgGuide = string.Format("./data/{0}.jpg", idxImgGuide);
+                string pathMrkGuide = string.Format("./data/{0}.txt", idxImgGuide);
+                imgGuide = new Bitmap(pathImgGuide);
+                mrkGuide = LoadFacialLandmarks(pathMrkGuide);
+                pbGuide.Image = imgGuide;
+                guideImgChanged = false;
+            }
+            if (idxImgSrc == 1) btnSrcLeft.Enabled = false;
+            else btnSrcLeft.Enabled = true;
+            if (idxImgSrc == totalImgs) btnSrcRight.Enabled = false;
+            else btnSrcRight.Enabled = true;
+            if (idxImgGuide == 1) btnGuideLeft.Enabled = false;
+            else btnGuideLeft.Enabled = true;
+            if (idxImgGuide == totalImgs) btnGuideRight.Enabled = false;
+            else btnGuideRight.Enabled = true;
         }
 
         private void OnLoad(object sender, EventArgs e)
         {
-            /*Bitmap bmp = new Bitmap("./data/test.png");
-            System.Drawing.Size size = bmp.Size;
-            pbSrc.Image = bmp;
-            Interpolation interpolater = Interpolation.GetInstance();
-            interpolater.SetSourceImg(bmp);
-            Bitmap bmp2 = new Bitmap(size.Width * 2, size.Height * 2);
-            BitmapData data2 = bmp2.LockBits(new Rectangle(0, 0, bmp2.Width, bmp2.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-            unsafe
-            {
-                int* pData = (int*)data2.Scan0;
-                for(int j = 0; j < bmp2.Height; ++j)
-                {
-                    for(int i = 0; i < bmp2.Width; ++i)
-                    {
-                        *(pData + i + j * bmp2.Width) = interpolater.Step(new Point2d(i / 2.0, j / 2.0), InterpolateMethod.Bicubic);
-                    }
-                }
-            }
-            bmp2.UnlockBits(data2);
-            pbDst.Image = bmp2;
-            bmp2.Save("./data/testBicubic.png");*/
-            Bitmap bmpSrc = new Bitmap("./data/8.jpg");
-            Bitmap bmpDst = (Bitmap)bmpSrc.Clone();
-            Point2i[] mrk1 = LoadFacialLandmarks(8);
-            Point2i[] mrk2 = LoadFacialLandmarks(1);
-            Point2i[] mrk22 = new Point2i[27], mrk11 = new Point2i[27];
-            for (int i = 0; i < 27; ++i)
-            {
-                mrk11[i] = mrk1[i];
-                mrk22[i] = mrk2[i];
-            }
-            Interpolation intp = Interpolation.GetInstance();
-            intp.SetSourceImg(bmpSrc);
-            BitmapData data = bmpDst.LockBits(new Rectangle(0, 0, bmpSrc.Width, bmpSrc.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-            Alignment algn = Alignment.GetInstance();
-            algn.EstimateLeastSquare(mrk22, mrk11);
-            mrk2 = algn.ApplyTransform(mrk2);
-            /*DeformTPS tps = DeformTPS.GetInstance();
-            tps.SetAttribute(68);
-            tps.Estimate(mrk2, mrk1);
-            unsafe
-            {
-                int* p = (int*)data.Scan0;
-                for (int j = 0; j < bmpDst.Height; ++j)
-                {
-                    for (int i = 0; i < bmpDst.Width; ++i)
-                    {
-                        * (p + i + j * bmpDst.Width) = intp.Step(tps.Step(new Point2i(i, j)), InterpolateMethod.Nearest);
-                    }
-                }
-            }*/
-            
-            DeformBspline bsp = DeformBspline.GetInstance();
-            bsp.SetAttribute(bmpSrc, 20);
-            unsafe
-            {
-                int* p = (int*)data.Scan0;
-                for (int k = 0; k < 68; ++k)
-                {
-                    Point2i[] boundaries = bsp.Displace(mrk1[k], mrk2[k]);
-                    for (int j = boundaries[0].Y; j < boundaries[1].Y; ++j)
-                    {
-                        for (int i = boundaries[0].X; i < boundaries[1].X; ++i)
-                        {
-                            *(p + i + j * bmpDst.Width) = intp.Step(bsp.Step(new Point2i(i, j)), InterpolateMethod.Bicubic);
-                        }
-                    }
-                }
-            }
-            bmpDst.UnlockBits(data);
-            pbSrc.Image = bmpSrc;
-            pbDst.Image = bmpDst;
+            InitData();
+            UpdateData();
         }
 
         private void OnFormClosing(object sender, FormClosingEventArgs e)
@@ -158,20 +114,20 @@ namespace NumericalAnalysis1
             
         }
 
-        private Point2i[] LoadFacialLandmarks(int nID)
+        private Point2i[] LoadFacialLandmarks(string path)
         {
-            string strLandmarkFileName = strDataPath + nID.ToString() + ".txt";
+            string strLandmarkFileName = path;
             if (File.Exists(strLandmarkFileName))
             {
-                Point2i[] ptsLandmarks = new Point2i[nLandmarks];
+                Point2i[] ptsLandmarks = new Point2i[landmarks];
                 FileStream fsRead = new FileStream(strLandmarkFileName, FileMode.Open);
                 long nLen = fsRead.Length;
                 byte[] buffer = new byte[nLen];
                 fsRead.Read(buffer, 0, buffer.Length);
                 string strEntire = Encoding.UTF8.GetString(buffer);
-                string[] strPoints = strEntire.Split(chSeps);
+                string[] strPoints = strEntire.Split(separators);
                 fsRead.Close();
-                for (int k = 0; k < nLandmarks; ++k)
+                for (int k = 0; k < landmarks; ++k)
                 {
                     ptsLandmarks[k].X = (int)Convert.ToSingle(strPoints[2 * k]);
                     ptsLandmarks[k].Y = (int)Convert.ToSingle(strPoints[2 * k + 1]);
@@ -182,6 +138,93 @@ namespace NumericalAnalysis1
             {
                 return new Point2i[]{ };
             }
+        }
+
+        private void OnbtnSrcMrkClick(object sender, EventArgs e)
+        {
+            if(srcMrkShown)
+            {
+                pbSrc.Image = imgSrc;
+                srcMrkShown = false;
+            }
+            else
+            {
+                Bitmap marked = (Bitmap)imgSrc.Clone();
+                var g = Graphics.FromImage(marked);
+                foreach (var mrk in mrkSrc)
+                {
+                    g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.Aquamarine)), mrk.X, mrk.Y, 5, 5);
+                }
+                g.Dispose();
+                pbSrc.Image = marked;
+                srcMrkShown = true;
+            }
+            UpdateData();
+        }
+
+        private void OnbtnGuideMrkClick(object sender, EventArgs e)
+        {
+            if (guideMrkShown)
+            {
+                pbGuide.Image = imgGuide;
+                guideMrkShown = false;
+            }
+            else
+            {
+                Bitmap marked = (Bitmap)imgGuide.Clone();
+                var g = Graphics.FromImage(marked);
+                foreach (var mrk in mrkGuide)
+                {
+                    g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.GhostWhite)), mrk.X, mrk.Y, 5, 5);
+                }
+                g.Dispose();
+                pbGuide.Image = marked;
+                guideMrkShown = true;
+            }
+            UpdateData();
+        }
+
+        private void OnbtnSrcLeftClick(object sender, EventArgs e)
+        {
+            --idxImgSrc;
+            srcImgChanged = true;
+            UpdateData();
+        }
+
+        private void OnbtnSrcRightClick(object sender, EventArgs e)
+        {
+            ++idxImgSrc;
+            srcImgChanged = true;
+            UpdateData();
+        }
+
+        private void OnbtnGuideLeftClick(object sender, EventArgs e)
+        {
+            --idxImgGuide;
+            guideImgChanged = true;
+            UpdateData();
+        }
+
+        private void OnbtnGuideRightClick(object sender, EventArgs e)
+        {
+            ++idxImgGuide;
+            guideImgChanged = true;
+            UpdateData();
+        }
+
+        private void OnrbNearestCheck(object sender, EventArgs e)
+        {
+            if (rbNearest.Checked) method = InterpolateMethod.Nearest;
+        }
+
+        private void OnrbBilinearCheck(object sender, EventArgs e)
+        {
+            if (rbBilinear.Checked) method = InterpolateMethod.Bilinear;
+        }
+
+        private void OnBicubicCheck(object sender, EventArgs e)
+        {
+            if (rbBicubic.Checked) method = InterpolateMethod.Bicubic;
         }
     }
 }

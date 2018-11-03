@@ -17,10 +17,7 @@ namespace NumericalAnalysis1
         //Singleton.
         private static Alignment instance = null;
 
-        private Alignment()
-        {
-            tsfmMatrix = new double[3, 3];
-        }
+        private Alignment() { }
 
         public static Alignment GetInstance()
         {
@@ -33,7 +30,8 @@ namespace NumericalAnalysis1
 
         public void EstimateLeastSquare(Point2i[] srcs, Point2i[] dsts)
         {
-            if(srcs.Length != dsts.Length)
+            tsfmMatrix = new double[3, 3];
+            if (srcs.Length != dsts.Length)
             {
                 throw new ArgumentException("Points do not match!");
             }

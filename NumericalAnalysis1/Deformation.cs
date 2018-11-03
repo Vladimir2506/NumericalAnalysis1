@@ -63,7 +63,7 @@ namespace NumericalAnalysis1
             if (deltaX > szGrid) deltaX = (short)(szGrid - 1);
             if (deltaY > szGrid) deltaY = (short)(szGrid - 1);
             // Store delta.
-            /*for (int j = -1; j < 2; ++j)
+            for (int j = -1; j < 2; ++j)
             {
                 for(int i = -1; i < 2; ++i)
                 {
@@ -71,8 +71,8 @@ namespace NumericalAnalysis1
                     if (ii < 0 || ii >= nControlX - 1 || jj < 0 || jj >= nControlY - 1) continue;
                     deltasGrids[ii+ jj * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
                 }
-            }*/
-            deltasGrids[(idxControlX) + (idxControlY) * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
+            }
+            //deltasGrids[(idxControlX) + (idxControlY) * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
             // Determine region of the map.
             Point2i ptLeftUp = new Point2i(Math.Max(idxControlX - 2, 0) * szGrid, Math.Max(idxControlY - 2, 0) * szGrid);
             Point2i ptRightDown = new Point2i(Math.Min(idxControlX + 2, nControlX) * szGrid, Math.Min(idxControlY + 2, nControlY) * szGrid);
@@ -240,7 +240,6 @@ namespace NumericalAnalysis1
                 weights[j].Item0 = augmented[j, nControlPoints + 3];
                 weights[j].Item1 = augmented[j, nControlPoints + 4];
             }
-            // utils.Print("C:\\Users\\dell1\\Desktop\\a.csv", augmented);
         }
 
         private double TPSRadialBasis(Point2i pt1, Point2i pt2)

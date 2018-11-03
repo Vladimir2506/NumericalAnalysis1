@@ -33,7 +33,12 @@ namespace NumericalAnalysis1
             // Set internal data matrix to image.
             szImg = new Size(img.Width, img.Height);
             matSrcData = new int[img.Width * img.Height];
-            BitmapData srcData = ((Bitmap)img).LockBits(new Rectangle(0, 0, img.Width, img.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            BitmapData srcData = ((Bitmap)img).LockBits
+            (
+                new Rectangle(0, 0, img.Width, img.Height), 
+                ImageLockMode.ReadWrite, 
+                PixelFormat.Format32bppArgb
+            );
             unsafe
             {
                 fixed (int* pMat = &matSrcData[0])
@@ -84,7 +89,11 @@ namespace NumericalAnalysis1
                 }
             }
             // Restrict & Compose
-            return (Restrict(a) << 24) | (Restrict(r) << 16) | (Restrict(g) << 8) | (Restrict(b) << 0);
+            return (Restrict(a) << 24) |
+                  (Restrict(r) << 16) |
+                  (Restrict(g) << 8) |
+                  (Restrict(b) << 0);
+
         }
         private double LinearBasis(int k, double x)
         {
@@ -118,7 +127,10 @@ namespace NumericalAnalysis1
                 }
             }
             // Restrict & Compose
-            return (Restrict(a) << 24) | (Restrict(r) << 16) | (Restrict(g) << 8) | (Restrict(b) << 0);
+            return (Restrict(a) << 24) |
+                  (Restrict(r) << 16) |
+                  (Restrict(g) << 8) |
+                  (Restrict(b) << 0);
         }
         private double CubicBasis(double x)
         {
