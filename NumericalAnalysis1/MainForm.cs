@@ -34,15 +34,19 @@ namespace NumericalAnalysis1
         Interpolation intp = null;
         Alignment algn = null;
         private int landmarks = 68;
-        private char[] separators = {' ', '\r', '\n' };
+        private char[] separators = { ' ', '\r', '\n' };
         Bitmap imgSrc = null;
         Bitmap imgGuide = null;
         Bitmap imgDst = null;
-        private InterpolateMethod method;
+        private InterpolateMethod methodIntp;
+        private DeformMethod methodDeform;
+        private int nAlign = 0;
 
         public MainForm()
         {
             InitializeComponent();
+            //gbTsfm.Paint += PaintBorderlessGroupBox;
+            //gbIntp.Paint += PaintBorderlessGroupBox;
             while (File.Exists(string.Format("./data/{0}.jpg", totalImgs + 1))) totalImgs++;
             intp = Interpolation.GetInstance();
             bsp = DeformBspline.GetInstance();
@@ -60,7 +64,9 @@ namespace NumericalAnalysis1
             srcMrkShown = false;
             guideMrkShown = false;
             rbNearest.Checked = true;
-            method = InterpolateMethod.Nearest;
+            rbBsp.Checked = true;
+            methodIntp = InterpolateMethod.Nearest;
+            methodDeform = DeformMethod.Bspline;
         }
 
         private void UpdateData()
@@ -75,6 +81,9 @@ namespace NumericalAnalysis1
                 string pathMrkSrc = string.Format("./data/{0}.txt", idxImgSrc);
                 imgSrc = new Bitmap(pathImgSrc);
                 mrkSrc = LoadFacialLandmarks(pathMrkSrc);
+                intp.SetSourceImg(imgSrc);
+                bsp.SetAttribute(imgSrc, 20);
+                tps.SetAttribute(68);
                 pbSrc.Image = imgSrc;
                 imgDst = (Bitmap)imgSrc.Clone();
                 srcImgChanged = false;
@@ -109,9 +118,9 @@ namespace NumericalAnalysis1
             Cv2.DestroyAllWindows();
         }
 
-        private void DisposeMats() 
+        private void DisposeMats()
         {
-            
+
         }
 
         private Point2i[] LoadFacialLandmarks(string path)
@@ -136,13 +145,13 @@ namespace NumericalAnalysis1
             }
             else
             {
-                return new Point2i[]{ };
+                return new Point2i[] { };
             }
         }
 
         private void OnbtnSrcMrkClick(object sender, EventArgs e)
         {
-            if(srcMrkShown)
+            if (srcMrkShown)
             {
                 pbSrc.Image = imgSrc;
                 srcMrkShown = false;
@@ -214,17 +223,77 @@ namespace NumericalAnalysis1
 
         private void OnrbNearestCheck(object sender, EventArgs e)
         {
-            if (rbNearest.Checked) method = InterpolateMethod.Nearest;
+            if (rbNearest.Checked) methodIntp = InterpolateMethod.Nearest;
         }
 
         private void OnrbBilinearCheck(object sender, EventArgs e)
         {
-            if (rbBilinear.Checked) method = InterpolateMethod.Bilinear;
+            if (rbBilinear.Checked) methodIntp = InterpolateMethod.Bilinear;
         }
 
         private void OnBicubicCheck(object sender, EventArgs e)
         {
-            if (rbBicubic.Checked) method = InterpolateMethod.Bicubic;
+            if (rbBicubic.Checked) methodIntp = InterpolateMethod.Bicubic;
+        }
+
+        private void OnrbBspCheck(object sender, EventArgs e)
+        {
+            if (rbBsp.Checked) methodDeform = DeformMethod.Bspline;
+        }
+
+        private void OnrbTpsCheck(object sender, EventArgs e)
+        {
+            if (rbTps.Checked) methodDeform = DeformMethod.TPSpline;
+        }
+
+        private void PaintBorderlessGroupBox(object sender, PaintEventArgs p)
+        {
+            GroupBox box = (GroupBox)sender;
+            p.Graphics.Clear(SystemColors.Control);
+            p.Graphics.DrawString(box.Text, box.Font, Brushes.MidnightBlue, 0, 0);
+        }
+
+        private void OnbtnExecuteClick(object sender, EventArgs e)
+        {
+            nAlign = 17;
+            Point2i[] algn1 = new Point2i[nAlign], algn2 = new Point2i[nAlign];
+            for(int i = 0; i < nAlign; ++i)
+            {
+                algn1[i] = mrkSrc[i];
+                algn2[i] = mrkGuide[i];
+            }
+            algn.EstimateLeastSquare(algn2, algn1);
+            mrkGuide = algn.ApplyTransform(mrkGuide);
+            tps.Estimate(mrkGuide, mrkSrc);
+            BitmapData dst = imgDst.LockBits(new Rectangle(0, 0, imgDst.Width, imgDst.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            unsafe
+            {
+                if (methodDeform == DeformMethod.Bspline)
+                {
+                    for(int i = 0; i < 68; ++i)
+                    {
+                        bsp.Displace(mrkSrc[i], mrkGuide[i]);
+                    }
+                }
+
+                int* pdst = (int*)dst.Scan0;
+                for(int j = 0; j < dst.Height; ++j)
+                {
+                    for (int i = 0; i < dst.Width; ++i)
+                    {
+                        if (methodDeform == DeformMethod.TPSpline)
+                        {
+                            *(pdst + i + j * dst.Width) = intp.Step(tps.Step(new Point2i(i, j)), methodIntp);
+                        }
+                        if (methodDeform == DeformMethod.Bspline)
+                        {
+                            *(pdst + i + j * dst.Width) = intp.Step(bsp.Step(new Point2i(i, j)), methodIntp);
+                        }
+                    }
+                }
+            }
+            imgDst.UnlockBits(dst);
+            pbDst.Image = imgDst;
         }
     }
 }

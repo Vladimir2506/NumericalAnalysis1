@@ -11,7 +11,7 @@ using Size = System.Drawing.Size;
 
 namespace NumericalAnalysis1
 {
-    public enum DeformMethod { Water,Bspline,TPSpline };
+    public enum DeformMethod { Bspline,TPSpline };
     public class DeformBspline
     {
         // Size of image.
@@ -240,6 +240,23 @@ namespace NumericalAnalysis1
                 weights[j].Item0 = augmented[j, nControlPoints + 3];
                 weights[j].Item1 = augmented[j, nControlPoints + 4];
             }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     
         }
 
         private double TPSRadialBasis(Point2i pt1, Point2i pt2)

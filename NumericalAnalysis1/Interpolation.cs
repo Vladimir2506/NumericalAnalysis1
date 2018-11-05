@@ -55,10 +55,10 @@ namespace NumericalAnalysis1
             }
             ((Bitmap)img).UnlockBits(srcData);
         }
-        public int Step(Point2d ptSrc, InterpolateMethod method)
+        public int Step(Point2d ptSrc, InterpolateMethod methodIntp)
         {
             // The atomic operation to calculate the interpolated value.
-            switch(method)
+            switch(methodIntp)
             {
                 case InterpolateMethod.Bicubic:
                     return Bicubic(GetNeighbourhood16(ptSrc), ptSrc);
@@ -67,7 +67,7 @@ namespace NumericalAnalysis1
                 case InterpolateMethod.Nearest:
                     return GetNeighbourhood1(ptSrc);
                 default:
-                    throw new ArgumentException("Invalid method.");
+                    throw new ArgumentException("Invalid methodIntp.");
             }
         }
         private int Bilinear(int[] ROI, Point2d ptSrc)
