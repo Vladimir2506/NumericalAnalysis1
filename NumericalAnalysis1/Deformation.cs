@@ -11,7 +11,7 @@ using Size = System.Drawing.Size;
 
 namespace NumericalAnalysis1
 {
-    public enum DeformMethod { Bspline,TPSpline };
+    public enum DeformMethod { BSpline,TPSpline };
     public class DeformBspline
     {
         // Size of image.
@@ -20,7 +20,7 @@ namespace NumericalAnalysis1
         private int nControlX = 0;
         private int nControlY = 0;
         private int szGrid;
-        private int[] deltasGrids;
+        private double[,] deltasGrids;
         // Singleton.
         private static DeformBspline instance = null;
         private DeformBspline() { }
@@ -41,27 +41,27 @@ namespace NumericalAnalysis1
             szGrid = gridSize;
             nControlX = (int)Math.Ceiling((double)szImg.Width / gridSize);
             nControlY = (int)Math.Ceiling((double)szImg.Height / gridSize);
-            deltasGrids = new int[nControlX * nControlY];
+            deltasGrids = new double[nControlX * nControlY, 2];
         }
 
-        public Point2i[] Displace(Point2i ptBegin, Point2i ptEnd)
+        public void Displace(Point2d ptBegin, Point2d ptEnd)
         {
             // Determine the control point displacement and the region to deform.
-            int idxControlX = (int)Math.Round((double)ptBegin.X / szGrid);
-            int idxControlY = (int)Math.Round((double)ptBegin.Y / szGrid);
+            int idxControlX = (int)Math.Round(ptBegin.X / szGrid);
+            int idxControlY = (int)Math.Round(ptBegin.Y / szGrid);
             // Make sure idxControl is in the map.
             if (idxControlX < 0) idxControlX = 0;
             if (idxControlY < 0) idxControlX = 0;
             // nControl - 1 may be out of the map.
             if (idxControlX >= nControlX - 1) idxControlX = nControlX - 2;
             if (idxControlY >= nControlY - 1) idxControlY = nControlY - 2;
-            short deltaX = (short)(ptEnd.X - idxControlX * szGrid);
-            short deltaY = (short)(ptEnd.Y - idxControlY * szGrid);
+            double deltaX = ptEnd.X - idxControlX * szGrid;
+            double deltaY = ptEnd.Y - idxControlY * szGrid;
             // Regularize the displacement into 1 grid.
-            if (deltaX < -szGrid) deltaX = (short)(1 - szGrid);
-            if (deltaY < -szGrid) deltaY = (short)(1 - szGrid);
-            if (deltaX > szGrid) deltaX = (short)(szGrid - 1);
-            if (deltaY > szGrid) deltaY = (short)(szGrid - 1);
+            if (deltaX < -szGrid) deltaX = -szGrid;
+            if (deltaY < -szGrid) deltaY = -szGrid;
+            if (deltaX > szGrid) deltaX = szGrid;
+            if (deltaY > szGrid) deltaY = szGrid;
             // Store delta.
             for (int j = -1; j < 2; ++j)
             {
@@ -69,24 +69,20 @@ namespace NumericalAnalysis1
                 {
                     int ii = idxControlX + i, jj = idxControlY + j;
                     if (ii < 0 || ii >= nControlX - 1 || jj < 0 || jj >= nControlY - 1) continue;
-                    deltasGrids[ii+ jj * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
+                    deltasGrids[ii+ jj * nControlX, 0] = deltaX;
+                    deltasGrids[ii+ jj * nControlX, 1] = deltaY;
                 }
             }
-            //deltasGrids[(idxControlX) + (idxControlY) * nControlX] = ((deltaY & 0xffff) << 16) | ((deltaX & 0xffff) << 0);
-            // Determine region of the map.
-            Point2i ptLeftUp = new Point2i(Math.Max(idxControlX - 2, 0) * szGrid, Math.Max(idxControlY - 2, 0) * szGrid);
-            Point2i ptRightDown = new Point2i(Math.Min(idxControlX + 2, nControlX) * szGrid, Math.Min(idxControlY + 2, nControlY) * szGrid);
-            return new Point2i[] { ptLeftUp, ptRightDown };
         }
 
-        public Point2d Step(Point2i ptSrc)
+        public Point2d Step(Point2d ptSrc)
         {
             // The atomic operation from one point to another controlled by grids nearby.
             Point2d ptDst = new Point2d();
             Point2i[] controlIdxs = new Point2i[4];
             // Compute the nearest control point index.
-            controlIdxs[1].X = ptSrc.X / szGrid;
-            controlIdxs[1].Y = ptSrc.Y / szGrid;
+            controlIdxs[1].X = (int)ptSrc.X / szGrid;
+            controlIdxs[1].Y = (int)ptSrc.Y / szGrid;
             // Expand to the 16-elems neighbourhood indices.
             for (int k = 0; k < 4; ++k)
             {
@@ -96,27 +92,28 @@ namespace NumericalAnalysis1
             for (int k = 0; k < 4; ++k)
             {
                 // Avoid Index out of range.
-                RestrictIdxToGrid(controlIdxs[k]);
+                ref int idxX = ref controlIdxs[k].X;
+                ref int idxY = ref controlIdxs[k].Y;
+                if (idxX < 0) idxX = 0;
+                if (idxY < 0) idxY = 0;
+                if (idxX >= nControlX) idxX = nControlX - 1;
+                if (idxY >= nControlY) idxY = nControlY - 1;
             }
-            double u = (double)ptSrc.X / szGrid - controlIdxs[1].X;
-            double v = (double)ptSrc.Y / szGrid - controlIdxs[1].Y;
-            unsafe
+            double u = ptSrc.X / szGrid - controlIdxs[1].X;
+            double v = ptSrc.Y / szGrid - controlIdxs[1].Y;
+            for (int j = 0; j < 3; ++j)
             {
-                fixed(int* pGridBase = &deltasGrids[0])
+                for (int i = 0; i < 3; ++i)
                 {
-                    for (int j = 0; j < 3; ++j)
-                    {
-                        for (int i = 0; i < 3; ++i)
-                        {
-                            // Get control points displacement and sum together by coefficient
-                            int* pGrid = pGridBase + controlIdxs[i].X + controlIdxs[j].Y * nControlX;
-                            double coefficient = BsplineBasis3(i, u) * BsplineBasis3(j, v);
-                            ptDst.X += coefficient * (short)((*pGrid >> 0) & 0xffff);
-                            ptDst.Y += coefficient * (short)((*pGrid >> 16) & 0xffff);
-                        }
-                    }
+                    // Get control points displacement and sum together by coefficient
+                    double dx = deltasGrids[controlIdxs[i].X + controlIdxs[j].Y * nControlX, 0];
+                    double dy = deltasGrids[controlIdxs[i].X + controlIdxs[j].Y * nControlX, 1];
+                    double coefficient = BsplineBasis3(i, u) * BsplineBasis3(j, v);
+                    ptDst.X += coefficient * dx;
+                    ptDst.Y += coefficient * dy;
                 }
             }
+  
             // Inverse approximation.
             ptDst.X = ptSrc.X - ptDst.X;
             ptDst.Y = ptSrc.Y - ptDst.Y;
@@ -125,7 +122,7 @@ namespace NumericalAnalysis1
 
         private double BsplineBasis3(int k, double t)
         {
-            // Order 3 Bspline basis function
+            // Order 3 BSpline basis function
             if (t > 1.0 || t < 0.0) return 0.0;
             switch (k)
             {
@@ -141,16 +138,6 @@ namespace NumericalAnalysis1
                     return 0.0;
             }
         }
-
-        private void RestrictIdxToGrid(Point2i ptIdx)
-        {
-            ref int idxX = ref ptIdx.X;
-            ref int idxY = ref ptIdx.Y;
-            if (idxX < 0) idxX = 0;
-            if (idxY < 0) idxY = 0;
-            if (idxX >= nControlX) idxX = nControlX - 1;
-            if (idxY >= nControlY) idxY = nControlY - 1;   
-        }
     }
 
     public class DeformTPS
@@ -159,10 +146,16 @@ namespace NumericalAnalysis1
         private int nControlPoints = 0;
         // Matrix of TPS equation.
         private Vec2d[] weights = null;
-        private Point2i[] targets = null;
+        private Point2d[] targets = null;
         // Singleton.
         private static DeformTPS instance = null;
         private DeformTPS() { }
+
+        public void Reset()
+        {
+            targets = new Point2d[nControlPoints];
+            weights = new Vec2d[nControlPoints + 3];
+        }
 
         public static DeformTPS GetInstance()
         {
@@ -176,10 +169,10 @@ namespace NumericalAnalysis1
         public void SetAttribute(int points)
         {
             nControlPoints = points;
-            targets = new Point2i[nControlPoints];
+            targets = new Point2d[nControlPoints];
         }
         
-        public Point2d Step(Point2i ptSrc)
+        public Point2d Step(Point2d ptSrc)
         {
             // The atomic operation of TPS.
             Point2d ptDst = new Point2d();
@@ -197,7 +190,7 @@ namespace NumericalAnalysis1
             return ptDst;
         }
 
-        public void Estimate(Point2i[] srcs, Point2i[] dsts)
+        public void Estimate(Point2d[] srcs, Point2d[] dsts)
         {
             // Get the TPS deform funtion.
             if (srcs.Length != nControlPoints || dsts.Length != nControlPoints)
@@ -234,32 +227,16 @@ namespace NumericalAnalysis1
             }
             // Solve.
             Utils.SolveLinearEqn(augmented);
+            Utils.Print("./test.csv", augmented);
             // Get result.
             for (int j = 0; j < maxRows; ++j)
             {
                 weights[j].Item0 = augmented[j, nControlPoints + 3];
                 weights[j].Item1 = augmented[j, nControlPoints + 4];
             }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     
         }
 
-        private double TPSRadialBasis(Point2i pt1, Point2i pt2)
+        private double TPSRadialBasis(Point2d pt1, Point2d pt2)
         {
             // Radial basis function of TPS.
             double result = 0.0;

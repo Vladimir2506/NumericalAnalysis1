@@ -28,16 +28,21 @@ namespace NumericalAnalysis1
             return instance;
         }
 
-        public void EstimateLeastSquare(Point2i[] srcs, Point2i[] dsts)
+        public void Reset()
         {
-            tsfmMatrix = new double[3, 3];
+            tsfmMatrix = new double[3, 2];
+        }
+
+        public void EstimateLeastSquare(Point2d[] srcs, Point2d[] dsts)
+        {
+            tsfmMatrix = new double[3, 2];
             if (srcs.Length != dsts.Length)
             {
                 throw new ArgumentException("Points do not match!");
             }
             int rows = srcs.Length;
             // Preparation
-            double[,] A = new double[rows, 3], b = new double[rows, 3];
+            double[,] A = new double[rows, 3], b = new double[rows, 2];
             for(int i = 0; i < rows; ++i)
             {
                 A[i, 0] = srcs[i].X;
@@ -45,7 +50,6 @@ namespace NumericalAnalysis1
                 A[i, 2] = 1;
                 b[i, 0] = dsts[i].X;
                 b[i, 1] = dsts[i].Y;
-                b[i, 2] = 1;
             }
             // 1. Get A'
             double[,] AT = Utils.Transpose(A);
@@ -53,7 +57,7 @@ namespace NumericalAnalysis1
             double[,] ATA = Utils.MatMul(AT, A);
             double[,] ATb = Utils.MatMul(AT, b);
             // 3. Solve (A'A)x = (A')b
-            double[,] augmented = new double[3, 6];
+            double[,] augmented = new double[3, 5];
             for(int i = 0; i < 3; ++i)
             {
                 augmented[i, 0] = ATA[i, 0];
@@ -61,7 +65,6 @@ namespace NumericalAnalysis1
                 augmented[i, 2] = ATA[i, 2];
                 augmented[i, 3] = ATb[i, 0];
                 augmented[i, 4] = ATb[i, 1];
-                augmented[i, 5] = ATb[i, 2];
             }
             Utils.SolveLinearEqn(augmented);
             // 4. Get result
@@ -69,13 +72,13 @@ namespace NumericalAnalysis1
             {
                 tsfmMatrix[i, 0] = augmented[i, 3];
                 tsfmMatrix[i, 1] = augmented[i, 4];
-                tsfmMatrix[i, 2] = augmented[i, 5];
             }
+            
         }
 
-        public Point2i[] ApplyTransform(Point2i[] points)
+        public Point2d[] ApplyTransform(Point2d[] points)
         {
-            Point2i[] results = new Point2i[points.Length];
+            Point2d[] results = new Point2d[points.Length];
             for(int k = 0; k < points.Length; ++k)
             {
                 double[,] result = new double[1, 3];
@@ -83,8 +86,8 @@ namespace NumericalAnalysis1
                 result[0, 1] = points[k].Y;
                 result[0, 2] = 1;
                 result = Utils.MatMul(result, tsfmMatrix);
-                results[k].X = (int)result[0, 0];
-                results[k].Y = (int)result[0, 1];
+                results[k].X = result[0, 0];
+                results[k].Y = result[0, 1];
             }
             return results;
         }

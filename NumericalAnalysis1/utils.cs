@@ -31,7 +31,7 @@ namespace NumericalAnalysis1
             // Step 1: Upper triangle matrix.
             for (int i = 0; i < maxRows; ++i)
             {
-                for (int k = i + 1; Math.Abs(augmented[i, i]) < 1e-12; ++k)
+                for (int k = i + 1; Math.Abs(augmented[i, i]) < 1e-12 && k < maxRows; ++k)
                 {
                     SwapRows(augmented, i, k);
                 }
