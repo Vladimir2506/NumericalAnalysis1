@@ -21,6 +21,10 @@ namespace NumericalAnalysis1
         private int nControlY = 0;
         private int szGrid;
         private double[,] deltasGrids;
+        // Exponential decay based adjustment.
+        private const double decayRate = 0.1;
+        private const int maxSteps = 5;
+
         // Singleton.
         private static DeformBspline instance = null;
         private DeformBspline() { }
@@ -34,45 +38,58 @@ namespace NumericalAnalysis1
             return instance;
         }
 
-        public void SetAttribute(Image img, int gridSize)
+        public void Displace(Image img, Point2d[] srcs, Point2d[] dsts, int gridSize)
         {
-            // Determine the control grids.
+            // Get the optimal Bspline deform grids.
             szImg = new Size(img.Width, img.Height);
+            if (srcs.Length != dsts.Length)
+            {
+                throw new ArgumentException("Points do not match.");
+            }
+            int controlPts = srcs.Length;
+            // Construct displacment-delta grids.
             szGrid = gridSize;
             nControlX = (int)Math.Ceiling((double)szImg.Width / gridSize);
             nControlY = (int)Math.Ceiling((double)szImg.Height / gridSize);
             deltasGrids = new double[nControlX * nControlY, 2];
-        }
-
-        public void Displace(Point2d ptBegin, Point2d ptEnd)
-        {
-            // Determine the control point displacement and the region to deform.
-            int idxControlX = (int)Math.Round(ptBegin.X / szGrid);
-            int idxControlY = (int)Math.Round(ptBegin.Y / szGrid);
-            // Make sure idxControl is in the map.
-            if (idxControlX < 0) idxControlX = 0;
-            if (idxControlY < 0) idxControlX = 0;
-            // nControl - 1 may be out of the map.
-            if (idxControlX >= nControlX - 1) idxControlX = nControlX - 2;
-            if (idxControlY >= nControlY - 1) idxControlY = nControlY - 2;
-            double deltaX = ptEnd.X - idxControlX * szGrid;
-            double deltaY = ptEnd.Y - idxControlY * szGrid;
-            // Regularize the displacement into 1 grid.
-            if (deltaX < -szGrid) deltaX = -szGrid;
-            if (deltaY < -szGrid) deltaY = -szGrid;
-            if (deltaX > szGrid) deltaX = szGrid;
-            if (deltaY > szGrid) deltaY = szGrid;
-            // Store delta.
-            for (int j = -1; j < 2; ++j)
+            Vec2d[] targetDisplacemet = new Vec2d[controlPts];
+            for (int i = 0; i < controlPts; ++i)
             {
-                for(int i = -1; i < 2; ++i)
+                targetDisplacemet[i].Item0 = dsts[i].X - srcs[i].X;
+                targetDisplacemet[i].Item1 = dsts[i].Y - srcs[i].Y;
+            }
+            // Iterative displacement.
+            for (int iter = 0; iter < maxSteps; ++iter)
+            {
+                for (int k = 0; k < controlPts; ++k)
                 {
-                    int ii = idxControlX + i, jj = idxControlY + j;
-                    if (ii < 0 || ii >= nControlX - 1 || jj < 0 || jj >= nControlY - 1) continue;
-                    deltasGrids[ii+ jj * nControlX, 0] = deltaX;
-                    deltasGrids[ii+ jj * nControlX, 1] = deltaY;
+                    Point2d pt = srcs[k];
+                    int x0 = (int)(pt.X / szGrid);
+                    int y0 = (int)(pt.Y / szGrid);
+                    double u = pt.X / szGrid - x0;
+                    double v = pt.Y / szGrid - y0;
+                    for (int j = -1; j < 3; ++j)
+                    {
+                        for (int i = -1; i < 3; ++i)
+                        {
+                            int x = x0 + i;
+                            int y = y0 + j;
+                            if (x > nControlX - 1 || x < 0 || y > nControlY - 1 || y < 0) continue;
+                            double coe = BsplineBasis3(j, v) * BsplineBasis3(i, u);
+                            double decay = Math.Pow(decayRate, iter);
+                            double dx = coe * targetDisplacemet[k].Item0 * decay;
+                            double dy = coe * targetDisplacemet[k].Item1 * decay;
+                            if (dx < -szGrid) dx = -szGrid;
+                            if (dy < -szGrid) dy = -szGrid;
+                            if (dx > szGrid - 1) dx = szGrid - 1;
+                            if (dy > szGrid - 1) dy = szGrid - 1;
+                            deltasGrids[y * nControlX + x, 0] += dx;
+                            deltasGrids[y * nControlX + x, 1] += dy;
+                        }
+                    }
                 }
             }
+            
         }
 
         public Point2d Step(Point2d ptSrc)
@@ -101,11 +118,11 @@ namespace NumericalAnalysis1
             }
             double u = ptSrc.X / szGrid - controlIdxs[1].X;
             double v = ptSrc.Y / szGrid - controlIdxs[1].Y;
-            for (int j = 0; j < 3; ++j)
+            for (int j = 0; j < 4; ++j)
             {
-                for (int i = 0; i < 3; ++i)
+                for (int i = 0; i < 4; ++i)
                 {
-                    // Get control points displacement and sum together by coefficient
+                    // Get control points displacement and sum together by coefficient.
                     double dx = deltasGrids[controlIdxs[i].X + controlIdxs[j].Y * nControlX, 0];
                     double dy = deltasGrids[controlIdxs[i].X + controlIdxs[j].Y * nControlX, 1];
                     double coefficient = BsplineBasis3(i, u) * BsplineBasis3(j, v);
@@ -113,8 +130,6 @@ namespace NumericalAnalysis1
                     ptDst.Y += coefficient * dy;
                 }
             }
-  
-            // Inverse approximation.
             ptDst.X = ptSrc.X - ptDst.X;
             ptDst.Y = ptSrc.Y - ptDst.Y;
             return ptDst;
@@ -122,7 +137,7 @@ namespace NumericalAnalysis1
 
         private double BsplineBasis3(int k, double t)
         {
-            // Order 3 BSpline basis function
+            // Order 3 BSpline basis function.
             if (t > 1.0 || t < 0.0) return 0.0;
             switch (k)
             {
@@ -143,19 +158,13 @@ namespace NumericalAnalysis1
     public class DeformTPS
     {
         // Num of control points.
-        private int nControlPoints = 0;
+        private int controlPts = 0;
         // Matrix of TPS equation.
         private Vec2d[] weights = null;
         private Point2d[] targets = null;
         // Singleton.
         private static DeformTPS instance = null;
         private DeformTPS() { }
-
-        public void Reset()
-        {
-            targets = new Point2d[nControlPoints];
-            weights = new Vec2d[nControlPoints + 3];
-        }
 
         public static DeformTPS GetInstance()
         {
@@ -165,74 +174,69 @@ namespace NumericalAnalysis1
             }
             return instance;
         }
-
-        public void SetAttribute(int points)
-        {
-            nControlPoints = points;
-            targets = new Point2d[nControlPoints];
-        }
         
         public Point2d Step(Point2d ptSrc)
         {
             // The atomic operation of TPS.
             Point2d ptDst = new Point2d();
-            // Implement the sum operation
-            // where weights = [w1, ..., wn, a1, ax, ay]
-            for(int k = 0; k < nControlPoints; ++k)
+            // Implement the sum operation,
+            // where weights = [w1, ..., wn, a1, ax, ay].
+            for(int k = 0; k < controlPts; ++k)
             {
                 double basis = TPSRadialBasis(ptSrc, targets[k]);
                 ptDst.X += weights[k].Item0 * basis;
                 ptDst.Y += weights[k].Item1 * basis; 
             }
-            // ax ay a1
-            ptDst.X += weights[nControlPoints + 1].Item0 * ptSrc.X + weights[nControlPoints + 2].Item0 * ptSrc.Y + weights[nControlPoints].Item0;
-            ptDst.Y += weights[nControlPoints + 1].Item1 * ptSrc.X + weights[nControlPoints + 2].Item1 * ptSrc.Y + weights[nControlPoints].Item1;
+            // Format: ax ay a1
+            ptDst.X += weights[controlPts + 1].Item0 * ptSrc.X + weights[controlPts + 2].Item0 * ptSrc.Y + weights[controlPts].Item0;
+            ptDst.Y += weights[controlPts + 1].Item1 * ptSrc.X + weights[controlPts + 2].Item1 * ptSrc.Y + weights[controlPts].Item1;
             return ptDst;
         }
 
         public void Estimate(Point2d[] srcs, Point2d[] dsts)
         {
             // Get the TPS deform funtion.
-            if (srcs.Length != nControlPoints || dsts.Length != nControlPoints)
+            if (srcs.Length != dsts.Length)
             {
                 throw new ArgumentException("Control points do not match!");
             }
-            weights = new Vec2d[nControlPoints + 3];
+            controlPts = srcs.Length;
+            targets = new Point2d[controlPts];
+            weights = new Vec2d[controlPts + 3];
             srcs.CopyTo(targets, 0);
             // Solve equation.
-            int maxRows = nControlPoints + 3, maxCols = nControlPoints + 5;
+            int maxRows = controlPts + 3, maxCols = controlPts + 5;
             double[,] augmented = new double[maxRows, maxCols];
             // Prepare.
-            for(int j = 0; j < nControlPoints; ++j)
+            for(int j = 0; j < controlPts; ++j)
             {
-                for(int i = j + 1; i < nControlPoints; ++i)
+                for(int i = j + 1; i < controlPts; ++i)
                 {
                     augmented[j, i] = TPSRadialBasis(targets[j], targets[i]);
                     augmented[i, j] = augmented[j, i];
                 }
             }
-            for (int k = 0; k < nControlPoints; ++k)
+            for (int k = 0; k < controlPts; ++k)
             {
-                augmented[k, nControlPoints] = 1;
-                augmented[nControlPoints, k] = 1;
-                augmented[k, nControlPoints + 1] = targets[k].X;
-                augmented[nControlPoints + 1, k] = targets[k].X;
-                augmented[k, nControlPoints + 2] = targets[k].Y;
-                augmented[nControlPoints + 2, k] = targets[k].Y;
+                augmented[k, controlPts] = 1;
+                augmented[controlPts, k] = 1;
+                augmented[k, controlPts + 1] = targets[k].X;
+                augmented[controlPts + 1, k] = targets[k].X;
+                augmented[k, controlPts + 2] = targets[k].Y;
+                augmented[controlPts + 2, k] = targets[k].Y;
             }
-            for(int k = 0; k < nControlPoints; ++k)
+            for(int k = 0; k < controlPts; ++k)
             {
-                augmented[k, nControlPoints + 3] = dsts[k].X;
-                augmented[k, nControlPoints + 4] = dsts[k].Y;
+                augmented[k, controlPts + 3] = dsts[k].X;
+                augmented[k, controlPts + 4] = dsts[k].Y;
             }
             // Solve.
             Utils.SolveLinearEqn(augmented);
-            Utils.Print("./test.csv", augmented);
             // Get result.
             for (int j = 0; j < maxRows; ++j)
             {
-                weights[j].Item0 = augmented[j, nControlPoints + 3];
-                weights[j].Item1 = augmented[j, nControlPoints + 4];
+                weights[j].Item0 = augmented[j, controlPts + 3];
+                weights[j].Item1 = augmented[j, controlPts + 4];
             }
         }
 

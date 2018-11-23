@@ -54,6 +54,10 @@
             this.pbGuide = new System.Windows.Forms.PictureBox();
             this.pbDst = new System.Windows.Forms.PictureBox();
             this.pbSrc = new System.Windows.Forms.PictureBox();
+            this.btnSrcDetect = new System.Windows.Forms.Button();
+            this.btnGuideDetect = new System.Windows.Forms.Button();
+            this.btnSaveSrcMrk = new System.Windows.Forms.Button();
+            this.btnSaveMrkGuide = new System.Windows.Forms.Button();
             this.gbIntp.SuspendLayout();
             this.gbTsfm.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbGuide)).BeginInit();
@@ -119,11 +123,11 @@
             this.gbIntp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.gbIntp.Font = new System.Drawing.Font("Microsoft YaHei UI Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.gbIntp.ForeColor = System.Drawing.Color.RoyalBlue;
-            this.gbIntp.Location = new System.Drawing.Point(640, 525);
+            this.gbIntp.Location = new System.Drawing.Point(735, 525);
             this.gbIntp.Margin = new System.Windows.Forms.Padding(0);
             this.gbIntp.Name = "gbIntp";
             this.gbIntp.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.gbIntp.Size = new System.Drawing.Size(395, 65);
+            this.gbIntp.Size = new System.Drawing.Size(300, 65);
             this.gbIntp.TabIndex = 10;
             this.gbIntp.TabStop = false;
             this.gbIntp.Text = "插值方法";
@@ -131,24 +135,24 @@
             // rbBicubic
             // 
             this.rbBicubic.AutoSize = true;
-            this.rbBicubic.Location = new System.Drawing.Point(270, 25);
+            this.rbBicubic.Location = new System.Drawing.Point(204, 25);
             this.rbBicubic.Name = "rbBicubic";
-            this.rbBicubic.Size = new System.Drawing.Size(128, 29);
+            this.rbBicubic.Size = new System.Drawing.Size(90, 29);
             this.rbBicubic.TabIndex = 2;
             this.rbBicubic.TabStop = true;
-            this.rbBicubic.Text = "双三次插值";
+            this.rbBicubic.Text = "双三次";
             this.rbBicubic.UseVisualStyleBackColor = true;
             this.rbBicubic.CheckedChanged += new System.EventHandler(this.OnBicubicCheck);
             // 
             // rbBilinear
             // 
             this.rbBilinear.AutoSize = true;
-            this.rbBilinear.Location = new System.Drawing.Point(145, 25);
+            this.rbBilinear.Location = new System.Drawing.Point(108, 25);
             this.rbBilinear.Name = "rbBilinear";
-            this.rbBilinear.Size = new System.Drawing.Size(128, 29);
+            this.rbBilinear.Size = new System.Drawing.Size(90, 29);
             this.rbBilinear.TabIndex = 1;
             this.rbBilinear.TabStop = true;
-            this.rbBilinear.Text = "双线性插值";
+            this.rbBilinear.Text = "双线性";
             this.rbBilinear.UseVisualStyleBackColor = true;
             this.rbBilinear.CheckedChanged += new System.EventHandler(this.OnrbBilinearCheck);
             // 
@@ -157,10 +161,10 @@
             this.rbNearest.AutoSize = true;
             this.rbNearest.Location = new System.Drawing.Point(20, 25);
             this.rbNearest.Name = "rbNearest";
-            this.rbNearest.Size = new System.Drawing.Size(128, 29);
+            this.rbNearest.Size = new System.Drawing.Size(90, 29);
             this.rbNearest.TabIndex = 0;
             this.rbNearest.TabStop = true;
-            this.rbNearest.Text = "最近邻插值";
+            this.rbNearest.Text = "最近邻";
             this.rbNearest.UseVisualStyleBackColor = true;
             this.rbNearest.CheckedChanged += new System.EventHandler(this.OnrbNearestCheck);
             // 
@@ -293,9 +297,9 @@
             this.lblSrc.ForeColor = System.Drawing.Color.RoyalBlue;
             this.lblSrc.Location = new System.Drawing.Point(150, 365);
             this.lblSrc.Name = "lblSrc";
-            this.lblSrc.Size = new System.Drawing.Size(88, 25);
+            this.lblSrc.Size = new System.Drawing.Size(69, 25);
             this.lblSrc.TabIndex = 17;
-            this.lblSrc.Text = "原始图片";
+            this.lblSrc.Text = "源图片";
             // 
             // lblGuide
             // 
@@ -307,7 +311,7 @@
             this.lblGuide.Name = "lblGuide";
             this.lblGuide.Size = new System.Drawing.Size(88, 25);
             this.lblGuide.TabIndex = 18;
-            this.lblGuide.Text = "向导图片";
+            this.lblGuide.Text = "导向图片";
             // 
             // lblDst
             // 
@@ -423,12 +427,80 @@
             this.pbSrc.TabIndex = 0;
             this.pbSrc.TabStop = false;
             // 
+            // btnSrcDetect
+            // 
+            this.btnSrcDetect.BackColor = System.Drawing.Color.White;
+            this.btnSrcDetect.FlatAppearance.BorderColor = System.Drawing.Color.Lavender;
+            this.btnSrcDetect.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightSkyBlue;
+            this.btnSrcDetect.FlatAppearance.MouseOverBackColor = System.Drawing.Color.AliceBlue;
+            this.btnSrcDetect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSrcDetect.Font = new System.Drawing.Font("Microsoft YaHei UI Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btnSrcDetect.ForeColor = System.Drawing.Color.RoyalBlue;
+            this.btnSrcDetect.Location = new System.Drawing.Point(35, 534);
+            this.btnSrcDetect.Name = "btnSrcDetect";
+            this.btnSrcDetect.Size = new System.Drawing.Size(120, 45);
+            this.btnSrcDetect.TabIndex = 21;
+            this.btnSrcDetect.Text = "检测关键点";
+            this.btnSrcDetect.UseVisualStyleBackColor = false;
+            // 
+            // btnGuideDetect
+            // 
+            this.btnGuideDetect.BackColor = System.Drawing.Color.White;
+            this.btnGuideDetect.FlatAppearance.BorderColor = System.Drawing.Color.Lavender;
+            this.btnGuideDetect.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightSkyBlue;
+            this.btnGuideDetect.FlatAppearance.MouseOverBackColor = System.Drawing.Color.AliceBlue;
+            this.btnGuideDetect.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnGuideDetect.Font = new System.Drawing.Font("Microsoft YaHei UI Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btnGuideDetect.ForeColor = System.Drawing.Color.RoyalBlue;
+            this.btnGuideDetect.Location = new System.Drawing.Point(385, 534);
+            this.btnGuideDetect.Name = "btnGuideDetect";
+            this.btnGuideDetect.Size = new System.Drawing.Size(120, 45);
+            this.btnGuideDetect.TabIndex = 22;
+            this.btnGuideDetect.Text = "检测关键点";
+            this.btnGuideDetect.UseVisualStyleBackColor = false;
+            // 
+            // btnSaveSrcMrk
+            // 
+            this.btnSaveSrcMrk.BackColor = System.Drawing.Color.White;
+            this.btnSaveSrcMrk.FlatAppearance.BorderColor = System.Drawing.Color.Lavender;
+            this.btnSaveSrcMrk.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightSkyBlue;
+            this.btnSaveSrcMrk.FlatAppearance.MouseOverBackColor = System.Drawing.Color.AliceBlue;
+            this.btnSaveSrcMrk.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSaveSrcMrk.Font = new System.Drawing.Font("Microsoft YaHei UI Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btnSaveSrcMrk.ForeColor = System.Drawing.Color.RoyalBlue;
+            this.btnSaveSrcMrk.Location = new System.Drawing.Point(215, 534);
+            this.btnSaveSrcMrk.Name = "btnSaveSrcMrk";
+            this.btnSaveSrcMrk.Size = new System.Drawing.Size(120, 45);
+            this.btnSaveSrcMrk.TabIndex = 23;
+            this.btnSaveSrcMrk.Text = "保存关键点";
+            this.btnSaveSrcMrk.UseVisualStyleBackColor = false;
+            // 
+            // btnSaveMrkGuide
+            // 
+            this.btnSaveMrkGuide.BackColor = System.Drawing.Color.White;
+            this.btnSaveMrkGuide.FlatAppearance.BorderColor = System.Drawing.Color.Lavender;
+            this.btnSaveMrkGuide.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightSkyBlue;
+            this.btnSaveMrkGuide.FlatAppearance.MouseOverBackColor = System.Drawing.Color.AliceBlue;
+            this.btnSaveMrkGuide.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSaveMrkGuide.Font = new System.Drawing.Font("Microsoft YaHei UI Light", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.btnSaveMrkGuide.ForeColor = System.Drawing.Color.RoyalBlue;
+            this.btnSaveMrkGuide.Location = new System.Drawing.Point(565, 534);
+            this.btnSaveMrkGuide.Name = "btnSaveMrkGuide";
+            this.btnSaveMrkGuide.Size = new System.Drawing.Size(120, 45);
+            this.btnSaveMrkGuide.TabIndex = 24;
+            this.btnSaveMrkGuide.Text = "保存关键点";
+            this.btnSaveMrkGuide.UseVisualStyleBackColor = false;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1072, 603);
+            this.Controls.Add(this.btnSaveMrkGuide);
+            this.Controls.Add(this.btnSaveSrcMrk);
+            this.Controls.Add(this.btnGuideDetect);
+            this.Controls.Add(this.btnSrcDetect);
             this.Controls.Add(this.lblDst);
             this.Controls.Add(this.lblGuide);
             this.Controls.Add(this.lblSrc);
@@ -497,6 +569,10 @@
         private System.Windows.Forms.Label lblSrc;
         private System.Windows.Forms.Label lblGuide;
         private System.Windows.Forms.Label lblDst;
+        private System.Windows.Forms.Button btnSrcDetect;
+        private System.Windows.Forms.Button btnGuideDetect;
+        private System.Windows.Forms.Button btnSaveSrcMrk;
+        private System.Windows.Forms.Button btnSaveMrkGuide;
     }
 }
 

@@ -196,7 +196,7 @@ namespace NumericalAnalysis1
         }
         private int Restrict(double x)
         {
-            // Restrict to one byte
+            // Restrict to one byte.
             x = x < 255.0 ? x : 255.0;
             x = x > 0.0 ? x : 0.0;
             return (int)x;

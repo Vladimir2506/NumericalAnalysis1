@@ -35,7 +35,6 @@ namespace NumericalAnalysis1
         private Interpolation intp = null;
         private Alignment algn = null;
         private int landmarks = 68;
-        private char[] separators = { ' ', '\r', '\n' };
         private Bitmap imgSrc = null;
         private Bitmap imgGuide = null;
         private Bitmap imgDst = null;
@@ -78,7 +77,7 @@ namespace NumericalAnalysis1
                 string pathImgSrc = string.Format("./data/{0}.jpg", idxImgSrc);
                 string pathMrkSrc = string.Format("./data/{0}.txt", idxImgSrc);
                 imgSrc = new Bitmap(pathImgSrc);
-                mrkSrc = LoadFacialLandmarks(pathMrkSrc);
+                mrkSrc = Utils.LoadFacialLandmarks(pathMrkSrc, landmarks);
                 pbSrc.Image = imgSrc;
                 imgDst = (Bitmap)imgSrc.Clone();
                 srcImgChanged = false;
@@ -89,7 +88,7 @@ namespace NumericalAnalysis1
                 string pathImgGuide = string.Format("./data/{0}.jpg", idxImgGuide);
                 string pathMrkGuide = string.Format("./data/{0}.txt", idxImgGuide);
                 imgGuide = new Bitmap(pathImgGuide);
-                mrkGuide = LoadFacialLandmarks(pathMrkGuide);
+                mrkGuide = Utils.LoadFacialLandmarks(pathMrkGuide, landmarks);
                 pbGuide.Image = imgGuide;
                 guideImgChanged = false;
                 guideMrkShown = false;
@@ -122,32 +121,6 @@ namespace NumericalAnalysis1
         private void DisposeMats()
         {
 
-        }
-
-        private Point2d[] LoadFacialLandmarks(string path)
-        {
-            string strLandmarkFileName = path;
-            if (File.Exists(strLandmarkFileName))
-            {
-                Point2d[] ptsLandmarks = new Point2d[landmarks];
-                FileStream fsRead = new FileStream(strLandmarkFileName, FileMode.Open);
-                long nLen = fsRead.Length;
-                byte[] buffer = new byte[nLen];
-                fsRead.Read(buffer, 0, buffer.Length);
-                string strEntire = Encoding.UTF8.GetString(buffer);
-                string[] strPoints = strEntire.Split(separators);
-                fsRead.Close();
-                for (int k = 0; k < landmarks; ++k)
-                {
-                    ptsLandmarks[k].X = Convert.ToDouble(strPoints[2 * k]);
-                    ptsLandmarks[k].Y = Convert.ToDouble(strPoints[2 * k + 1]);
-                }
-                return ptsLandmarks;
-            }
-            else
-            {
-                return new Point2d[] { };
-            }
         }
 
         private void OnbtnSrcMrkClick(object sender, EventArgs e)
@@ -247,13 +220,6 @@ namespace NumericalAnalysis1
             if (rbTps.Checked) methodDeform = DeformMethod.TPSpline;
         }
 
-        private void PaintBorderlessGroupBox(object sender, PaintEventArgs p)
-        {
-            GroupBox box = (GroupBox)sender;
-            p.Graphics.Clear(SystemColors.Control);
-            p.Graphics.DrawString(box.Text, box.Font, Brushes.MidnightBlue, 0, 0);
-        }
-
         private void OnbtnExecuteClick(object sender, EventArgs e)
         {
             if (idxImgSrc == idxImgGuide)
@@ -261,30 +227,25 @@ namespace NumericalAnalysis1
                 pbDst.Image = imgSrc;
                 return;
             }
-            for (int k = 0; k < nAlign; ++k)
+            for (int k = 0; k < landmarks; ++k)
             {
                 algn1[k] = mrkSrc[k];
                 algn2[k] = mrkGuide[k];
             }
             intp.SetSourceImg(imgSrc);
-            bsp.SetAttribute(imgSrc, 15);
-            tps.SetAttribute(landmarks);
             algn.EstimateLeastSquare(algn2, algn1);
             mrkGuide2 = algn.ApplyTransform(mrkGuide);
+            if (methodDeform == DeformMethod.BSpline)
+            {
+                bsp.Displace(imgSrc, mrkSrc, mrkGuide2, 20);
+            }
+            if (methodDeform == DeformMethod.TPSpline)
+            {
+                tps.Estimate(mrkGuide2, mrkSrc);
+            }
             BitmapData dst = imgDst.LockBits(new Rectangle(0, 0, imgDst.Width, imgDst.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
             unsafe
-            {
-                if (methodDeform == DeformMethod.BSpline)
-                {
-                    for(int i = 0; i < landmarks; ++i)
-                    {
-                        bsp.Displace(mrkSrc[i], mrkGuide2[i]);
-                    }
-                }
-                if (methodDeform == DeformMethod.TPSpline)
-                {
-                    tps.Estimate(mrkGuide2, mrkSrc);
-                }
+            { 
                 int* pdst = (int*)dst.Scan0;
                 for(int j = 0; j < dst.Height; ++j)
                 {
@@ -303,7 +264,7 @@ namespace NumericalAnalysis1
             }
             imgDst.UnlockBits(dst);
             var g = Graphics.FromImage(imgDst);
-            foreach (var mrk in mrkGuide2)
+            /*foreach (var mrk in mrkGuide2)
             {
                 g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.Yellow)), (float)mrk.X, (float)mrk.Y, 6, 6);
             }
@@ -311,9 +272,8 @@ namespace NumericalAnalysis1
             {
                 g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.Blue)), (float)mrk.X, (float)mrk.Y, 6, 6);
             }
-            g.Dispose();
+            g.Dispose();*/
             pbDst.Image = imgDst;
-            
         }
     }
 }

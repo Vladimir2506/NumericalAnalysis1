@@ -4,11 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using OpenCvSharp;
 
 namespace NumericalAnalysis1
 {
     public static class Utils
     {
+        private static char[] separators = { ' ', '\r', '\n' };
+
         public static void Print(string path, double[,] mat)
         {
             FileStream fs = new FileStream(path, FileMode.Create);
@@ -106,6 +109,48 @@ namespace NumericalAnalysis1
                     {
                         result[i, j] += A[i, k] * B[k, j];
                     }
+                }
+            }
+            return result;
+        }
+        public static Point2d[] LoadFacialLandmarks(string path, int landmarks)
+        {
+            string strLandmarkFileName = path;
+            if (File.Exists(strLandmarkFileName))
+            {
+                Point2d[] ptsLandmarks = new Point2d[landmarks];
+                FileStream fsRead = new FileStream(strLandmarkFileName, FileMode.Open);
+                long nLen = fsRead.Length;
+                byte[] buffer = new byte[nLen];
+                fsRead.Read(buffer, 0, buffer.Length);
+                string strEntire = Encoding.UTF8.GetString(buffer);
+                string[] strPoints = strEntire.Split(separators);
+                fsRead.Close();
+                for (int k = 0; k < landmarks; ++k)
+                {
+                    ptsLandmarks[k].X = Convert.ToDouble(strPoints[2 * k]);
+                    ptsLandmarks[k].Y = Convert.ToDouble(strPoints[2 * k + 1]);
+                }
+                return ptsLandmarks;
+            }
+            else
+            {
+                return new Point2d[] { };
+            }
+        }
+        public static double[,] Hadamard(double[,] A, double[,] B)
+        {
+            if (A.GetLength(1) != B.GetLength(1) || A.GetLength(0) != B.GetLength(0))
+            {
+                throw new ArgumentException("Invalid axes to perform matmul.");
+            }
+            int rows = A.GetLength(0), cols = A.GetLength(1);
+            double[,] result = new double[rows, cols];
+            for (int i = 0; i < rows; ++i)
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    result[i, j] = A[i, j] * B[i, j];
                 }
             }
             return result;
