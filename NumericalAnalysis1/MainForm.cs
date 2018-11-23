@@ -25,15 +25,17 @@ namespace NumericalAnalysis1
         private int totalImgs = 0;
         private Point2d[] mrkSrc = null;
         private Point2d[] mrkGuide = null;
-        private Point2d[] mrkGuide2 = null;
         private bool srcMrkShown = false;
         private bool guideMrkShown = false;
         private bool srcImgChanged = false;
         private bool guideImgChanged = false;
+        private bool mineSrc = false;
+        private bool mineGuide = false;
         private DeformBspline bsp = null;
         private DeformTPS tps = null;
         private Interpolation intp = null;
         private Alignment algn = null;
+        private Detection det = null;
         private int landmarks = 68;
         private Bitmap imgSrc = null;
         private Bitmap imgGuide = null;
@@ -51,10 +53,12 @@ namespace NumericalAnalysis1
             bsp = DeformBspline.GetInstance();
             tps = DeformTPS.GetInstance();
             algn = Alignment.GetInstance();
+            det = Detection.GetInstance();
         }
 
         private void InitData()
         {
+            det.LoadModel("./model/DetectorModel.dat");
             pbDst.Image = new Bitmap("./data/test.jpg");
             idxImgSrc = 1;
             idxImgGuide = 1;
@@ -62,6 +66,8 @@ namespace NumericalAnalysis1
             guideImgChanged = true;
             srcMrkShown = false;
             guideMrkShown = false;
+            mineSrc = false;
+            mineGuide = false;
             rbNearest.Checked = true;
             rbBsp.Checked = true;
             methodIntp = InterpolateMethod.Nearest;
@@ -74,21 +80,26 @@ namespace NumericalAnalysis1
         {
             if (srcImgChanged)
             {
-                string pathImgSrc = string.Format("./data/{0}.jpg", idxImgSrc);
-                string pathMrkSrc = string.Format("./data/{0}.txt", idxImgSrc);
-                imgSrc = new Bitmap(pathImgSrc);
-                mrkSrc = Utils.LoadFacialLandmarks(pathMrkSrc, landmarks);
+                if (!mineSrc)
+                {
+                    string pathImgSrc = string.Format("./data/{0}.jpg", idxImgSrc);
+                    string pathMrkSrc = string.Format("./data/{0}.txt", idxImgSrc);
+                    mrkSrc = Utils.LoadFacialLandmarks(pathMrkSrc, landmarks);
+                    imgSrc = new Bitmap(pathImgSrc);
+                }
                 pbSrc.Image = imgSrc;
-                imgDst = (Bitmap)imgSrc.Clone();
                 srcImgChanged = false;
                 srcMrkShown = false;
             }
             if (guideImgChanged)
             {
-                string pathImgGuide = string.Format("./data/{0}.jpg", idxImgGuide);
-                string pathMrkGuide = string.Format("./data/{0}.txt", idxImgGuide);
-                imgGuide = new Bitmap(pathImgGuide);
-                mrkGuide = Utils.LoadFacialLandmarks(pathMrkGuide, landmarks);
+                if (!mineGuide)
+                {
+                    string pathImgGuide = string.Format("./data/{0}.jpg", idxImgGuide);
+                    string pathMrkGuide = string.Format("./data/{0}.txt", idxImgGuide);
+                    imgGuide = new Bitmap(pathImgGuide);
+                    mrkGuide = Utils.LoadFacialLandmarks(pathMrkGuide, landmarks);
+                }
                 pbGuide.Image = imgGuide;
                 guideImgChanged = false;
                 guideMrkShown = false;
@@ -116,11 +127,6 @@ namespace NumericalAnalysis1
         private void OnFormClosing(object sender, FormClosingEventArgs e)
         {
             Cv2.DestroyAllWindows();
-        }
-
-        private void DisposeMats()
-        {
-
         }
 
         private void OnbtnSrcMrkClick(object sender, EventArgs e)
@@ -170,6 +176,7 @@ namespace NumericalAnalysis1
         private void OnbtnSrcLeftClick(object sender, EventArgs e)
         {
             --idxImgSrc;
+            mineSrc = false;
             srcImgChanged = true;
             UpdateData();
         }
@@ -177,6 +184,7 @@ namespace NumericalAnalysis1
         private void OnbtnSrcRightClick(object sender, EventArgs e)
         {
             ++idxImgSrc;
+            mineSrc = false;
             srcImgChanged = true;
             UpdateData();
         }
@@ -184,6 +192,7 @@ namespace NumericalAnalysis1
         private void OnbtnGuideLeftClick(object sender, EventArgs e)
         {
             --idxImgGuide;
+            mineGuide = false;
             guideImgChanged = true;
             UpdateData();
         }
@@ -191,6 +200,7 @@ namespace NumericalAnalysis1
         private void OnbtnGuideRightClick(object sender, EventArgs e)
         {
             ++idxImgGuide;
+            mineGuide = false;
             guideImgChanged = true;
             UpdateData();
         }
@@ -220,8 +230,155 @@ namespace NumericalAnalysis1
             if (rbTps.Checked) methodDeform = DeformMethod.TPSpline;
         }
 
+        private void OnbtnSaveClick(object sender, EventArgs e)
+        {
+            Bitmap tmp = (Bitmap)imgDst.Clone();
+            imgDst = (Bitmap)pbDst.Image;
+            using (var saveFileDlg = new SaveFileDialog())
+            {
+                saveFileDlg.Title = "保存目标图片";
+                saveFileDlg.RestoreDirectory = true;
+                saveFileDlg.Filter = "位图 (.bmp)|*.bmp|联合图像专家组 (.jpg)|*.jpg|便携式网络图形 (.png)|*.png";
+                if (saveFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = saveFileDlg.FileName;
+                    string[] seps = fileName.Split(new char[] { '.' }, 2);
+                    string fileExtName = seps[1];
+                    switch (fileExtName)
+                    {
+                        case "jpg":
+                            imgDst.Save(fileName, ImageFormat.Jpeg);
+                            break;
+                        case "bmp":
+                            imgDst.Save(fileName, ImageFormat.Bmp);
+                            break;
+                        case "png":
+                            imgDst.Save(fileName, ImageFormat.Png);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            imgDst = tmp;
+        }
+
+        private void OnbtnSrcDetectClick(object sender, EventArgs e)
+        {
+            det.DetectLandmarks68(in imgSrc, out mrkSrc);
+        }
+
+        private void OnbtnGuideDetectClick(object sender, EventArgs e)
+        {
+            det.DetectLandmarks68(in imgGuide, out mrkGuide);
+        }
+
+        private void OmbtnLoadImgSrcClick(object sender, EventArgs e)
+        {
+            using (var openFileDlg = new OpenFileDialog())
+            {
+                openFileDlg.Title = "加载源图片";
+                openFileDlg.RestoreDirectory = true;
+                openFileDlg.Filter = "位图 (.bmp)|*.bmp|联合图像专家组 (.jpg)|*.jpg|便携式网络图形 (.png)|*.png";
+                if (openFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = openFileDlg.FileName;
+                    imgSrc = (Bitmap)Image.FromFile(fileName);
+                    mineSrc = true;
+                    srcImgChanged = true;
+                    UpdateData();
+                }
+            }
+        }
+
+        private void OmbtnLoadImgGuideClick(object sender, EventArgs e)
+        {
+            using (var openFileDlg = new OpenFileDialog())
+            {
+                openFileDlg.Title = "加载导向图片";
+                openFileDlg.RestoreDirectory = true;
+                openFileDlg.Filter = "位图 (.bmp)|*.bmp|联合图像专家组 (.jpg)|*.jpg|便携式网络图形 (.png)|*.png";
+                if (openFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = openFileDlg.FileName;
+                    imgGuide = (Bitmap)Image.FromFile(fileName);
+                    mineGuide = true;
+                    guideImgChanged = true;
+                    UpdateData();
+                }
+            }
+        }
+
+        private void OnbtnLoadMrkSrcClick(object sender, EventArgs e)
+        {
+            using (var openFileDlg = new OpenFileDialog())
+            {
+                openFileDlg.Title = "加载源图片关键点";
+                openFileDlg.Filter = "文本文件(*.txt)|*.txt";
+                openFileDlg.RestoreDirectory = true;
+                if (openFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = openFileDlg.FileName;
+                    mrkSrc = Utils.LoadFacialLandmarks(fileName, 68);
+                }
+            }
+        }
+
+        private void OnbtnLoadMrkGuideClick(object sender, EventArgs e)
+        {
+            using (var openFileDlg = new OpenFileDialog())
+            {
+                openFileDlg.Title = "加载导向图片关键点";
+                openFileDlg.Filter = "文本文件(*.txt)|*.txt";
+                openFileDlg.RestoreDirectory = true;
+                if (openFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = openFileDlg.FileName;
+                    mrkGuide = Utils.LoadFacialLandmarks(fileName, 68);
+                }
+            }
+        }
+
+        private void OnbtnSaveSrcMrkClick(object sender, EventArgs e)
+        {
+            using (var saveFileDlg = new SaveFileDialog())
+            {
+                saveFileDlg.Title = "保存源图片关键点";
+                saveFileDlg.Filter = "文本文件(*.txt)|*.txt";
+                saveFileDlg.RestoreDirectory = true;
+                if (saveFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = saveFileDlg.FileName;
+                    Utils.SaveFacialLandmarks(fileName, mrkSrc);
+                }
+            }
+        }
+
+        private void OnbtnSaveMrkGuideClick(object sender, EventArgs e)
+        {
+            using (var saveFileDlg = new SaveFileDialog())
+            {
+                saveFileDlg.Title = "保存导向图片关键点";
+                saveFileDlg.Filter = "文本文件(*.txt)|*.txt";
+                saveFileDlg.RestoreDirectory = true;
+                if (saveFileDlg.ShowDialog() == DialogResult.OK)
+                {
+                    string fileName = saveFileDlg.FileName;
+                    Utils.SaveFacialLandmarks(fileName, mrkGuide);
+                }
+            }
+        }
+
         private void OnbtnExecuteClick(object sender, EventArgs e)
         {
+            if (mrkSrc == null)
+            {
+                MessageBox.Show("源图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            if (mrkGuide == null)
+            {
+                MessageBox.Show("导向图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
             if (idxImgSrc == idxImgGuide)
             {
                 pbDst.Image = imgSrc;
@@ -234,7 +391,7 @@ namespace NumericalAnalysis1
             }
             intp.SetSourceImg(imgSrc);
             algn.EstimateLeastSquare(algn2, algn1);
-            mrkGuide2 = algn.ApplyTransform(mrkGuide);
+            Point2d[] mrkGuide2 = algn.ApplyTransform(mrkGuide);
             if (methodDeform == DeformMethod.BSpline)
             {
                 bsp.Displace(imgSrc, mrkSrc, mrkGuide2, 20);
@@ -263,16 +420,6 @@ namespace NumericalAnalysis1
                 }
             }
             imgDst.UnlockBits(dst);
-            var g = Graphics.FromImage(imgDst);
-            /*foreach (var mrk in mrkGuide2)
-            {
-                g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.Yellow)), (float)mrk.X, (float)mrk.Y, 6, 6);
-            }
-            foreach (var mrk in mrkSrc)
-            {
-                g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.Blue)), (float)mrk.X, (float)mrk.Y, 6, 6);
-            }
-            g.Dispose();*/
             pbDst.Image = imgDst;
         }
     }

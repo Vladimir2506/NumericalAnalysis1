@@ -10,24 +10,8 @@ namespace NumericalAnalysis1
 {
     public static class Utils
     {
-        private static char[] separators = { ' ', '\r', '\n' };
+        private static readonly char[] separators = { ' ', '\r', '\n' };
 
-        public static void Print(string path, double[,] mat)
-        {
-            FileStream fs = new FileStream(path, FileMode.Create);
-            StreamWriter sw = new StreamWriter(fs);
-            for (int i = 0; i < mat.GetLength(0); i++)
-            {
-                for (int j = 0; j < mat.GetLength(1); j++)
-                {
-                    sw.Write(mat[i, j]);
-                    sw.Write(',');
-                }
-                sw.Write("\r\n");
-            }
-            sw.Close();
-            fs.Close();
-        }
         public static void SolveLinearEqn(double[,] augmented)
         {
             int maxRows = augmented.GetLength(0), maxCols = augmented.GetLength(1);
@@ -115,11 +99,10 @@ namespace NumericalAnalysis1
         }
         public static Point2d[] LoadFacialLandmarks(string path, int landmarks)
         {
-            string strLandmarkFileName = path;
-            if (File.Exists(strLandmarkFileName))
+            if (File.Exists(path))
             {
                 Point2d[] ptsLandmarks = new Point2d[landmarks];
-                FileStream fsRead = new FileStream(strLandmarkFileName, FileMode.Open);
+                FileStream fsRead = new FileStream(path, FileMode.Open);
                 long nLen = fsRead.Length;
                 byte[] buffer = new byte[nLen];
                 fsRead.Read(buffer, 0, buffer.Length);
@@ -135,25 +118,19 @@ namespace NumericalAnalysis1
             }
             else
             {
-                return new Point2d[] { };
+                return null;
             }
         }
-        public static double[,] Hadamard(double[,] A, double[,] B)
+
+        public static void SaveFacialLandmarks(string path, Point2d[] landmarks)
         {
-            if (A.GetLength(1) != B.GetLength(1) || A.GetLength(0) != B.GetLength(0))
+            StringBuilder lines = new StringBuilder("");
+            for (int k = 0; k < landmarks.Length; ++k)
             {
-                throw new ArgumentException("Invalid axes to perform matmul.");
+                string line = String.Format("{0:e} {1:e}\n", landmarks[k].X, landmarks[k].Y);
+                lines.Append(line);
             }
-            int rows = A.GetLength(0), cols = A.GetLength(1);
-            double[,] result = new double[rows, cols];
-            for (int i = 0; i < rows; ++i)
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    result[i, j] = A[i, j] * B[i, j];
-                }
-            }
-            return result;
+            File.AppendAllText(path, lines.ToString());
         }
     }
 }

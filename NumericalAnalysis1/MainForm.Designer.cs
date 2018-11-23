@@ -16,7 +16,7 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
-                DisposeMats();
+                
             }
             base.Dispose(disposing);
         }
@@ -224,6 +224,7 @@
             this.btnSave.TabIndex = 12;
             this.btnSave.Text = "保存图片";
             this.btnSave.UseVisualStyleBackColor = false;
+            this.btnSave.Click += new System.EventHandler(this.OnbtnSaveClick);
             // 
             // btnLoadImgSrc
             // 
@@ -240,6 +241,7 @@
             this.btnLoadImgSrc.TabIndex = 13;
             this.btnLoadImgSrc.Text = "加载图片";
             this.btnLoadImgSrc.UseVisualStyleBackColor = false;
+            this.btnLoadImgSrc.Click += new System.EventHandler(this.OmbtnLoadImgSrcClick);
             // 
             // btnLoadMrkSrc
             // 
@@ -256,6 +258,7 @@
             this.btnLoadMrkSrc.TabIndex = 14;
             this.btnLoadMrkSrc.Text = "加载关键点";
             this.btnLoadMrkSrc.UseVisualStyleBackColor = false;
+            this.btnLoadMrkSrc.Click += new System.EventHandler(this.OnbtnLoadMrkSrcClick);
             // 
             // btnLoadImgGuide
             // 
@@ -272,6 +275,7 @@
             this.btnLoadImgGuide.TabIndex = 15;
             this.btnLoadImgGuide.Text = "加载图片";
             this.btnLoadImgGuide.UseVisualStyleBackColor = false;
+            this.btnLoadImgGuide.Click += new System.EventHandler(this.OmbtnLoadImgGuideClick);
             // 
             // btnLoadMrkGuide
             // 
@@ -288,6 +292,7 @@
             this.btnLoadMrkGuide.TabIndex = 16;
             this.btnLoadMrkGuide.Text = "加载关键点";
             this.btnLoadMrkGuide.UseVisualStyleBackColor = false;
+            this.btnLoadMrkGuide.Click += new System.EventHandler(this.OnbtnLoadMrkGuideClick);
             // 
             // lblSrc
             // 
@@ -442,6 +447,7 @@
             this.btnSrcDetect.TabIndex = 21;
             this.btnSrcDetect.Text = "检测关键点";
             this.btnSrcDetect.UseVisualStyleBackColor = false;
+            this.btnSrcDetect.Click += new System.EventHandler(this.OnbtnSrcDetectClick);
             // 
             // btnGuideDetect
             // 
@@ -458,6 +464,7 @@
             this.btnGuideDetect.TabIndex = 22;
             this.btnGuideDetect.Text = "检测关键点";
             this.btnGuideDetect.UseVisualStyleBackColor = false;
+            this.btnGuideDetect.Click += new System.EventHandler(this.OnbtnGuideDetectClick);
             // 
             // btnSaveSrcMrk
             // 
@@ -474,6 +481,7 @@
             this.btnSaveSrcMrk.TabIndex = 23;
             this.btnSaveSrcMrk.Text = "保存关键点";
             this.btnSaveSrcMrk.UseVisualStyleBackColor = false;
+            this.btnSaveSrcMrk.Click += new System.EventHandler(this.OnbtnSaveSrcMrkClick);
             // 
             // btnSaveMrkGuide
             // 
@@ -490,6 +498,7 @@
             this.btnSaveMrkGuide.TabIndex = 24;
             this.btnSaveMrkGuide.Text = "保存关键点";
             this.btnSaveMrkGuide.UseVisualStyleBackColor = false;
+            this.btnSaveMrkGuide.Click += new System.EventHandler(this.OnbtnSaveMrkGuideClick);
             // 
             // MainForm
             // 
