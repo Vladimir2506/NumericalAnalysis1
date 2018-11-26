@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using OpenCvSharp;
 using System.Drawing;
 using System.Drawing.Imaging;
-using Point2i = OpenCvSharp.Point;
 using Size = System.Drawing.Size;
 
 namespace NumericalAnalysis1
@@ -36,7 +31,7 @@ namespace NumericalAnalysis1
             BitmapData srcData = ((Bitmap)img).LockBits
             (
                 new Rectangle(0, 0, img.Width, img.Height), 
-                ImageLockMode.ReadWrite, 
+                ImageLockMode.ReadOnly, 
                 PixelFormat.Format32bppArgb
             );
             unsafe

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using OpenCvSharp;
-using Point2i = OpenCvSharp.Point;
+﻿using OpenCvSharp;
 using DlibDotNet;
 using System.Drawing.Imaging;
 using System.Drawing;
@@ -36,6 +30,7 @@ namespace NumericalAnalysis1
 
         public void DetectLandmarks68(in Bitmap inputs, out Point2d[] outputs)
         {
+            // Face landmarks detection using Dlib.
             outputs = new Point2d[68];
             BitmapData data = inputs.LockBits(new System.Drawing.Rectangle(0, 0, inputs.Width, inputs.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             Array2D<int> image = new Array2D<int>(inputs.Height, inputs.Width);
@@ -53,6 +48,7 @@ namespace NumericalAnalysis1
             inputs.UnlockBits(data);
             Dlib.PyramidUp(image);
             DlibDotNet.Rectangle[] boundingBoxes = detector.Operator(image);
+            // If multiple faces are detected, select the first one.
             DlibDotNet.Rectangle box = boundingBoxes[0];
             FullObjectDetection result = landmarkModel.Detect(image, box);
             for (uint i = 0; i < 68; i++)

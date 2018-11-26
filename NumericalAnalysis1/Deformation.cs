@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing.Imaging;
 using OpenCvSharp;
 using System.Drawing;
 using Point2i = OpenCvSharp.Point;
@@ -58,7 +53,7 @@ namespace NumericalAnalysis1
                 targetDisplacemet[i].Item0 = dsts[i].X - srcs[i].X;
                 targetDisplacemet[i].Item1 = dsts[i].Y - srcs[i].Y;
             }
-            // Iterative displacement.
+            // Iterative displacement with decay.
             for (int iter = 0; iter < maxSteps; ++iter)
             {
                 for (int k = 0; k < controlPts; ++k)
@@ -137,7 +132,7 @@ namespace NumericalAnalysis1
 
         private double BsplineBasis3(int k, double t)
         {
-            // Order 3 BSpline basis function.
+            // 3rd Order BSpline basis function.
             if (t > 1.0 || t < 0.0) return 0.0;
             switch (k)
             {

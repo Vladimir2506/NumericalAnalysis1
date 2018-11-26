@@ -16,7 +16,8 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
-                
+                imgSrc.Dispose();
+                imgGuide.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -537,7 +538,6 @@
             this.MinimizeBox = false;
             this.Name = "MainForm";
             this.Text = "NumericalAnalysis1";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OnFormClosing);
             this.Load += new System.EventHandler(this.OnLoad);
             this.gbIntp.ResumeLayout(false);
             this.gbIntp.PerformLayout();

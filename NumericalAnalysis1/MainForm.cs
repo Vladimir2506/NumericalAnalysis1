@@ -1,30 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using OpenCvSharp;
-using System.Threading;
-using OpenCvSharp.Extensions;
-using Point2i = OpenCvSharp.Point;
-using Cuda = OpenCvSharp.Cuda;
-using System.Net;
 using System.Drawing.Imaging;
 
 namespace NumericalAnalysis1
 {
     public partial class MainForm : Form
     {
+        // Indices of test samples.
         private int idxImgSrc = 0;
         private int idxImgGuide = 0;
         private int totalImgs = 0;
+        // Core landmarks.
         private Point2d[] mrkSrc = null;
         private Point2d[] mrkGuide = null;
+        private Bitmap imgSrc = null;
+        private Bitmap imgGuide = null;
+        private Bitmap imgDst = null;
+        // Logic Controls.
         private bool srcMrkShown = false;
         private bool guideMrkShown = false;
         private bool srcImgChanged = false;
@@ -37,17 +32,16 @@ namespace NumericalAnalysis1
         private Alignment algn = null;
         private Detection det = null;
         private int landmarks = 68;
-        private Bitmap imgSrc = null;
-        private Bitmap imgGuide = null;
-        private Bitmap imgDst = null;
         private InterpolateMethod methodIntp;
         private DeformMethod methodDeform;
+        // Pre-alignment.
         private int nAlign = 68;
         private Point2d[] algn1 = null, algn2 = null;
 
         public MainForm()
         {
             InitializeComponent();
+            // Init all methods.
             while (File.Exists(string.Format("./data/{0}.jpg", totalImgs + 1))) totalImgs++;
             intp = Interpolation.GetInstance();
             bsp = DeformBspline.GetInstance();
@@ -58,6 +52,7 @@ namespace NumericalAnalysis1
 
         private void InitData()
         {
+            // Set the initial data.
             det.LoadModel("./model/DetectorModel.dat");
             pbDst.Image = new Bitmap("./data/test.jpg");
             idxImgSrc = 1;
@@ -78,6 +73,7 @@ namespace NumericalAnalysis1
 
         private void UpdateData()
         {
+            // When UI need to change...
             if (srcImgChanged)
             {
                 if (!mineSrc)
@@ -87,7 +83,12 @@ namespace NumericalAnalysis1
                     mrkSrc = Utils.LoadFacialLandmarks(pathMrkSrc, landmarks);
                     imgSrc = new Bitmap(pathImgSrc);
                 }
+                else
+                {
+                    mrkSrc = null;
+                }
                 pbSrc.Image = imgSrc;
+                imgDst = (Bitmap)imgSrc.Clone();
                 srcImgChanged = false;
                 srcMrkShown = false;
             }
@@ -99,6 +100,10 @@ namespace NumericalAnalysis1
                     string pathMrkGuide = string.Format("./data/{0}.txt", idxImgGuide);
                     imgGuide = new Bitmap(pathImgGuide);
                     mrkGuide = Utils.LoadFacialLandmarks(pathMrkGuide, landmarks);
+                }
+                else
+                {
+                    mrkGuide = null;
                 }
                 pbGuide.Image = imgGuide;
                 guideImgChanged = false;
@@ -120,13 +125,9 @@ namespace NumericalAnalysis1
 
         private void OnLoad(object sender, EventArgs e)
         {
+            // Load to initialize.
             InitData();
             UpdateData();
-        }
-
-        private void OnFormClosing(object sender, FormClosingEventArgs e)
-        {
-            Cv2.DestroyAllWindows();
         }
 
         private void OnbtnSrcMrkClick(object sender, EventArgs e)
@@ -138,6 +139,11 @@ namespace NumericalAnalysis1
             }
             else
             {
+                if (mrkSrc == null)
+                {
+                    MessageBox.Show("源图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 Bitmap marked = (Bitmap)imgSrc.Clone();
                 var g = Graphics.FromImage(marked);
                 foreach (var mrk in mrkSrc)
@@ -160,11 +166,23 @@ namespace NumericalAnalysis1
             }
             else
             {
+                if (mrkGuide == null)
+                {
+                    MessageBox.Show("导向图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
                 Bitmap marked = (Bitmap)imgGuide.Clone();
                 var g = Graphics.FromImage(marked);
                 foreach (var mrk in mrkGuide)
                 {
-                    g.FillEllipse(new SolidBrush(Color.FromKnownColor(KnownColor.LightGreen)), (float)mrk.X, (float)mrk.Y, 6, 6);
+                    g.FillEllipse
+                        (
+                            new SolidBrush(Color.FromKnownColor(KnownColor.LightGreen)), 
+                            (float)mrk.X, 
+                            (float)mrk.Y, 
+                            6, 
+                            6
+                        );
                 }
                 g.Dispose();
                 pbGuide.Image = marked;
@@ -341,6 +359,11 @@ namespace NumericalAnalysis1
 
         private void OnbtnSaveSrcMrkClick(object sender, EventArgs e)
         {
+            if (mrkSrc == null)
+            {
+                MessageBox.Show("源图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             using (var saveFileDlg = new SaveFileDialog())
             {
                 saveFileDlg.Title = "保存源图片关键点";
@@ -356,6 +379,11 @@ namespace NumericalAnalysis1
 
         private void OnbtnSaveMrkGuideClick(object sender, EventArgs e)
         {
+            if (mrkGuide == null)
+            {
+                MessageBox.Show("导向图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             using (var saveFileDlg = new SaveFileDialog())
             {
                 saveFileDlg.Title = "保存导向图片关键点";
@@ -371,19 +399,29 @@ namespace NumericalAnalysis1
 
         private void OnbtnExecuteClick(object sender, EventArgs e)
         {
+            // Apply transforms.
             if (mrkSrc == null)
             {
                 MessageBox.Show("源图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
             if (mrkGuide == null)
             {
                 MessageBox.Show("导向图无关键点！", "提示", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
-            if (idxImgSrc == idxImgGuide)
+            // If landmarks are identical, return identity mapping.
+            double sigmaDeltas = 0.0;
+            for (int k = 0; k < landmarks; ++k)
+            {
+                sigmaDeltas += mrkSrc[k].DistanceTo(mrkGuide[k]);
+            }
+            if (sigmaDeltas < 1e-12)
             {
                 pbDst.Image = imgSrc;
                 return;
             }
+            // Set up pre-alignment and interpolation.
             for (int k = 0; k < landmarks; ++k)
             {
                 algn1[k] = mrkSrc[k];
@@ -392,6 +430,7 @@ namespace NumericalAnalysis1
             intp.SetSourceImg(imgSrc);
             algn.EstimateLeastSquare(algn2, algn1);
             Point2d[] mrkGuide2 = algn.ApplyTransform(mrkGuide);
+            // Set up deformation.
             if (methodDeform == DeformMethod.BSpline)
             {
                 bsp.Displace(imgSrc, mrkSrc, mrkGuide2, 20);
@@ -400,7 +439,13 @@ namespace NumericalAnalysis1
             {
                 tps.Estimate(mrkGuide2, mrkSrc);
             }
-            BitmapData dst = imgDst.LockBits(new Rectangle(0, 0, imgDst.Width, imgDst.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            // Speed up interpolation.
+            BitmapData dst = imgDst.LockBits
+                (
+                    new Rectangle(0, 0, imgDst.Width, imgDst.Height), 
+                    ImageLockMode.WriteOnly, 
+                    PixelFormat.Format32bppArgb
+                );
             unsafe
             { 
                 int* pdst = (int*)dst.Scan0;
@@ -408,13 +453,22 @@ namespace NumericalAnalysis1
                 {
                     for (int i = 0; i < dst.Width; ++i)
                     {
+                        // Step by step.
                         if (methodDeform == DeformMethod.TPSpline)
                         {
-                            *(pdst + i + j * dst.Width) = intp.Step(tps.Step(new Point2d(i, j)), methodIntp);
+                            *(pdst + i + j * dst.Width) = intp.Step
+                                (
+                                    tps.Step(new Point2d(i, j)), 
+                                    methodIntp
+                                );
                         }
                         if (methodDeform == DeformMethod.BSpline)
                         {
-                            *(pdst + i + j * dst.Width) = intp.Step(bsp.Step(new Point2d(i, j)), methodIntp);
+                            *(pdst + i + j * dst.Width) = intp.Step
+                                (
+                                    bsp.Step(new Point2d(i, j)), 
+                                    methodIntp
+                                );
                         }
                     }
                 }
